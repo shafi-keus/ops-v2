@@ -1,0 +1,61 @@
+@import "./helpers/variables";
+@import "./shadows";
+@import "./helpers/mixin";
+@import "./inputs";
+@import "./buttons";
+
+.theme-page{
+    background-color: $bgColor;
+}
+
+.circle{
+    padding:10px;
+    border-radius: 50%;
+    div{
+        width:15px;
+        height:15px;
+    }
+}
+
+@if($bgColor == #ECECEC){
+    .theme-font{
+        color: #1C2534;
+    }
+}
+@else{
+    .theme-font{
+        color: #fff;
+    }
+}
+
+.theme-reverse-border{
+    border-color: if($bgColor == #ECECEC,#000,#ECECEC);
+}
+
+
+@for $i from 1 through 100{
+    .fsipx-#{$i}{
+        font-size: #{$i}px;
+    }
+}
+
+@each $key, $val in $buttons{
+    .clr-#{$key}{
+        color:$val;
+    }
+}
+
+@each $key, $val in $buttons{
+    .badge-#{$key}{
+        color: if($key=="white",#000,if($key=="plain",#000,#fff));
+        position: absolute;
+        right:0;
+        top:0;
+        background-color: $val;
+        display: inline-block;
+        padding:0 4px;
+        border-radius: 50%;
+        transform: translate(40%,-40%);
+        font-size:10px;
+    }
+}

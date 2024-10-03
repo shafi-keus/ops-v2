@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ops V2</string>
+    <string name="title_activity_main">Ops V2</string>
+    <string name="package_name">com.keus.bleApp</string>
+    <string name="custom_url_scheme">com.keus.bleApp</string>
+</resources>

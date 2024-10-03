@@ -1,0 +1,41 @@
+@import "./helpers/variables";
+
+
+@if($bgColor == #ECECEC){
+    .shadow-inward{
+        box-shadow: inset 2px 2px 4px rgba(0, 0, 0, 0.6), inset -2px -2px 4px rgba(255, 255, 255, 0.4)
+    }
+    .shadow-normal{
+        box-shadow: -2px -2px 4px rgba(255, 255, 255, 1), 2px 2px 4px rgba(0, 0, 0, 0.16);
+    }
+}
+@else{
+    .shadow-inward{
+        box-shadow: inset -3.75px -3.75px 7.5px rgba(255, 255, 255, 0.4), inset 3.75px 3.75px 7.5px rgba(0, 0, 0, 0.16),
+        -3px -3px 6px rgba(255, 255, 255, 0.1), 3px 3px 6px rgba(0, 0, 0, 0.96);;
+    }
+    .shadow-normal{
+        box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.1), 3px 3px 6px rgba(0, 0, 0, 0.96);
+    }
+}
+
+.shadow-sm{
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.08);
+}
+
+// .bottom-shadow{
+//     box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.08);
+// }
+
+// .top-shadow{
+//     box-shadow: 0px -4px 6px rgba(0, 0, 0, 0.08);
+// }
+//sudheer css
+.bottom-shadow{
+    box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.16);
+}
+
+
+.top-shadow{
+    box-shadow: -2px -2px 4px rgba(255, 255, 255, 1);
+}

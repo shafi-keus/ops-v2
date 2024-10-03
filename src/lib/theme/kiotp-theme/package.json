@@ -1,0 +1,16 @@
+{
+  "name": "@keus-automation/kiotp-theme",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/*",
+  "scripts": {
+    "build": "sass src/:dist/",
+    "watch": "sass src/:dist/ --watch"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "sass": "^1.60.0"
+  }
+}

@@ -1,0 +1,7 @@
+input{
+    accent-color: map-get($buttons,"blue");
+}
+
+*,h1,h2,h3,h4,h5,h6,p,label,span,strong,b{
+    color: if($bgColor==#ECECEC,#000,#fff);
+}

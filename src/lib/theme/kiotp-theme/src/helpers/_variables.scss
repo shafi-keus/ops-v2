@@ -1,0 +1,44 @@
+$bgColor: #ECECEC !default;
+$fontFam: 'Poppins', sans-serif;
+$primary30 : #00468B;
+$buttons:(
+    "blue": #2767B9,
+    "red": #CC1E1E,
+    "white": #DEDEDE,
+    "black": #1C2534,
+    "plain": #ECECEC,
+    "green": #21CB6F,
+);
+
+$sizes:(
+    "sm":(
+        "padding": 4px 12px,
+        "fsize":13px,
+        "csize":10px
+    ),
+    "md": (
+        "padding":10px 16px,
+        "fsize":15px,
+        "csize":15px
+    ),
+    "lg": (
+        "padding":16px 48px,
+        "fsize":18px,
+        "csize":20px
+    ),
+    "xs":(
+        "padding": 3px 8px,
+        "fsize":11px,
+        "csize":7px
+    ),
+    "xl":(
+        "padding": 32px 96px,
+        "fsize": 22px,
+        "csize": 25px
+    ),
+    "xxl":(
+        "padding": 32px 96px,
+        "fsize": 22px,
+        "csize": 35px
+    )
+)

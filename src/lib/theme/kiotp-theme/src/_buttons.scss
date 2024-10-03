@@ -1,0 +1,103 @@
+@mixin btn($val: #fff){
+    border-radius: 16px;
+    // border:none;
+    font-family: $fontFam;
+    // &:hover{
+    //     background-color: lighten($val,10);
+    //     color: #fff;
+    // }
+}
+
+@mixin btn-outlined($val: #fff){
+    box-sizing: border-box;
+    font-family: $fontFam;
+    border-radius: 16px;
+    background-color: $bgColor;
+    // &:hover{
+    //     background-color: lighten(#000,if($bgColor== #ECECEC,85,20));
+    //     color: $val;
+    // }
+}
+
+@each $key, $val in $buttons{
+    //.btn-color
+    .btn-#{$key}{
+        border : 1px solid $primary30;
+        background-color: $val;
+        color: if($key=="white",#757575,if($key=="plain",#111827,#fff));
+        padding: 10px 16px;
+        @include btn($val);
+        *{
+            color: if($key=="white",#757575,if($key=="plain",#111827,#fff));
+        }
+    }
+    //.btn-color-outlined
+    .btn-#{$key}-outlined{
+        @include btn-outlined($val);
+        border: 1px solid $val;
+        padding:10px 16px;
+        color:$val;
+        *{
+            color:$val;
+            font-size: inherit;
+        }
+    }
+    
+
+    @each $skey, $sval in $sizes{
+        //.btn-color-size(sm,md,lg)
+        .btn-#{$key}-#{$skey}{
+            border : 1px solid $primary30;
+            background-color: $val;
+            color: if($key=="white",#757575,if($key=="plain",#111827,#fff));
+            padding: map-get($sval, "padding");
+            font-size: map-get($sval, "fsize");
+            @include btn($val);
+            *{
+                color: if($key=="white",#757575,if($key=="plain",#111827,#fff));
+                font-size: inherit;
+            }
+            @if($bgColor == #ECECEC){
+                box-shadow: -2px -2px 4px rgba(255, 255, 255, 1), 2px 2px 4px rgba(0, 0, 0, 0.16);
+            }
+            @else{
+                box-shadow: -3px -3px 6px rgba(255, 255, 255, 0.1), 3px 3px 6px rgba(0, 0, 0, 0.96);   
+            }
+        }
+        //.btn-color-outlined-size
+        .btn-#{$key}-outlined-#{$skey}{
+            @include btn-outlined($val);
+            border:1px solid $val;
+            padding:map-get($sval, "padding");
+            font-size: map-get($sval, "fsize");
+            color:$val;
+            *{
+                color:$val;
+                font-size: inherit;
+            }
+        }
+
+        .circle-#{$skey}{
+            border : 1px solid $primary30;
+            padding:10px;
+            border-radius:50%;
+            div{
+                height:map-get($sval, "csize");
+                width:map-get($sval, "csize");
+            }
+        }
+    }
+
+}
+
+// .btn-left-icon{
+//     position: relative;
+//     // margin:10px 8px 10px 16px;
+//     right: 16px;
+//     margin-right: 8px;
+// }
+// .btn-right-icon{
+//     position: relative;
+//     // margin:10px 8px 10px 16px;
+//     left: 16px;
+// }

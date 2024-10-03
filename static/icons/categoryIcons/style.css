@@ -1,0 +1,108 @@
+@font-face {
+  font-family: 'icomoon';
+  src:  url('fonts/icomoon.eot?p9byti');
+  src:  url('fonts/icomoon.eot?p9byti#iefix') format('embedded-opentype'),
+    url('fonts/icomoon.ttf?p9byti') format('truetype'),
+    url('fonts/icomoon.woff?p9byti') format('woff'),
+    url('fonts/icomoon.svg?p9byti#icomoon') format('svg');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="icon-"], [class*=" icon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'icomoon' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.icon-acfan:before {
+  content: "\e900";
+}
+.icon-cctv:before {
+  content: "\e901";
+}
+.icon-contact_sensor:before {
+  content: "\e902";
+}
+.icon-curtain:before {
+  content: "\e903";
+}
+.icon-curtain_wizard:before {
+  content: "\e904";
+}
+.icon-cv3:before {
+  content: "\e905";
+}
+.icon-cv6:before {
+  content: "\e906";
+}
+.icon-dcfan:before {
+  content: "\e907";
+}
+.icon-embedded_switch:before {
+  content: "\e908";
+}
+.icon-gate_closed:before {
+  content: "\e909";
+}
+.icon-Gateway:before {
+  content: "\e90a";
+}
+.icon-hvac:before {
+  content: "\e90b";
+}
+.icon-Icon:before {
+  content: "\e90c";
+}
+.icon-Icon-1:before {
+  content: "\e90d";
+}
+.icon-Icon-2:before {
+  content: "\e90e";
+}
+.icon-ir_blaster:before {
+  content: "\e90f";
+}
+.icon-light-bulb:before {
+  content: "\e910";
+}
+.icon-dimmer:before {
+  content: "\e910";
+}
+.icon-light-bulb1:before {
+  content: "\e911";
+}
+.icon-dimmer-1:before {
+  content: "\e911";
+}
+.icon-scene_control:before {
+  content: "\e912";
+}
+.icon-scene_wizard:before {
+  content: "\e913";
+}
+.icon-slider_curtain:before {
+  content: "\e914";
+}
+.icon-slider_curtain-1:before {
+  content: "\e915";
+}
+.icon-smart_console:before {
+  content: "\e916";
+}
+.icon-zigbee:before {
+  content: "\e917";
+}
+.icon-zigbee-1:before {
+  content: "\e918";
+}
