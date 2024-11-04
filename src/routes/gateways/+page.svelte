@@ -188,6 +188,14 @@
     // dupArr = [...arr];
   }
 
+  async function pairHub() {
+    console.log(manualIp)
+  }
+
+  const getRegisteredNodes = async() =>{
+    
+  }
+
 </script>
 
 <div class="theme-page" style="height: 100vh;padding-bottom:22%">
@@ -242,8 +250,9 @@
     </Modal>
     <!-- Modal for entering the ip manually -->
     <Modal bind:isOpen={ipmanual} title="IP address" style="height:50vh;">
-      <div class="my-2">
+      <div class="m-2">
         <Inputfield
+        
           placeholder="Enter Ip"
           style="display:flex;justify-content:center;"
           bind:inputValue={manualIp}
@@ -252,15 +261,12 @@
           <div
             style="margin-left: 1.5rem;display:flex;align-items:center;"
           ></div>
+          <!-- svelte-ignore a11y-click-events-have-key-events -->
+          <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
           <p
             class="float-end proceed"
             class:active
-            on:click={async () => {
-              // search(inputValue);
-              await connectToGateway();
-              ipmanual = false;
-              // manualIp = "";
-            }}
+            on:click={()=>{if(manualIp) pairHub()}}
           >
             Proceed
           </p>
@@ -279,7 +285,7 @@
     <!-- Modal for displaying Advance search -->
     <Modal
       bind:isOpen={openmodal}
-      style="height:13vh;display:flex;justify-content:center;flex-direction:column;"
+      style="height:10vh;display:flex;justify-content:center;flex-direction:column;"
     >
       <!-- <div style="height: 50%;display:flex;align-items:center;">
           <span
@@ -296,7 +302,7 @@
             Full network scan
           </div>
         </div> -->
-      <div style="height: 50%;display:flex;align-items:center">
+      <div style="display:flex;align-items:center;margin-block:16px">
         <span
           class="icon-edit fsipx-25"
           style="position: relative;left:3%;color:rgba(0,0,0,0.9);"

@@ -10,3 +10,13 @@ export interface NodeRegristration {
     serviceUserPassword: string;
     nodeInfo: NodeInfo;
 }
+
+interface Service {
+    id: string;
+    serviceType: 'INTRA_PROCESS' | 'INTER_PROCESS';
+    instanceCount: number;
+}
+
+export interface ServicesResponse {
+    services: Service[];
+}

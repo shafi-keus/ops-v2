@@ -139,3 +139,27 @@ export const bleInitialize: Writable<boolean> = writable(false)
 export const deviceConnected: Writable<boolean> = writable(false)
 
 
+// store to save all the gateway data required for node reg
+type GatewayDetailInfo = {
+  siteId: string,
+  masterKey: string,
+  serviceUser: string,
+  serviceUserPassword: string,
+  nodeInfo: {
+    brokerIp: string,
+    autoDiscoveryOfBrokerIp: boolean
+  }
+}
+
+export const gatewayDetailInfo: Writable<GatewayDetailInfo> = writable({
+  siteId: '',
+  masterKey: '',
+  serviceUser: '',
+  serviceUserPassword: '',
+  nodeInfo: {
+    autoDiscoveryOfBrokerIp: false,
+    brokerIp: ''
+  }
+})
+
+

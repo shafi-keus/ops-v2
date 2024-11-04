@@ -17,7 +17,15 @@
 	// let qr = false;
 
 	import { token } from '$lib/constants/global';
-	import { gatewayData, Gateway, gatewayId, leadId, nc, gateways } from '$lib/stores/index';
+	import {
+		gatewayData,
+		Gateway,
+		gatewayId,
+		leadId,
+		nc,
+		gateways,
+		gatewayDetailInfo
+	} from '$lib/stores/index';
 	import getAllGatewaysApi from '$lib/apis/getAllGateways';
 	import type { PluginListenerHandle } from '@capacitor/core';
 	import { onDestroy, onMount } from 'svelte';
@@ -84,12 +92,28 @@
 		await goto('devices');
 	}
 
+	const saveGatewayInfo = async (data: any) => {
+		let info = data?.gatewayInfo;
+		if (info) {
+			$gatewayDetailInfo.siteId = info.gatewayId;
+			$gatewayDetailInfo.masterKey = info.gatewayKey;
+			$gatewayDetailInfo.serviceUser = info?.serviceUser;
+			$gatewayDetailInfo.serviceUserPassword = info?.serviceUserPassword;
+			$gatewayDetailInfo.nodeInfo = {
+				autoDiscoveryOfBrokerIp: false,
+				brokerIp: 'kiotp_nats_main_server'
+			};
+		}
+		console.log('gateway info store --> ', $gatewayDetailInfo);
+	};
+
 	async function search(leadID: string) {
 		leadID = leadID.trim();
 		// console.log(JSON.stringify($gatewayData));
 		let value: any = $gatewayData.find((obj: any) => obj.leadId == leadID);
 
 		if (value) {
+			saveGatewayInfo(value);
 			if ($gateways.length > 0) $gateways.length = 0;
 			$leadId = leadID;
 			$gatewayId = value.gatewayId;
