@@ -20,16 +20,17 @@ export enum PluginType {
     GENERAL_PLUGIN = 'GENERAL_PLUGIN'
 }
 
-// Output types
 export interface PluginOutput {
     plugins: {
         core: {
-            description: string,
-            plugins: CorePluginOutput[]
+            name: string;  // Added name field
+            description: string;
+            plugins: CorePluginOutput[];
         };
         general: {
-            description: string,
-            plugins: GeneralPluginOutput[]
+            name: string;  // Added name field
+            description: string;
+            plugins: GeneralPluginOutput[];
         };
     };
 }
@@ -74,10 +75,12 @@ export async function processMediaData(plugins: BasePlugin[]) {
     const output: PluginOutput = {
         plugins: {
             core: {
+                name: 'Core Plugins',
                 description: '',
                 plugins: []
             },
             general: {
+                name: 'General Plugins',
                 description: '',
                 plugins: []
             }
@@ -101,6 +104,7 @@ export async function processMediaData(plugins: BasePlugin[]) {
     // Process core plugins
     if (corePlugins.length > 0) {
         const corePlugin = corePlugins[0];
+        output.plugins.core.name = corePlugin.name;  // You can set this dynamically if needed
         output.plugins.core.description = corePlugin.description;
 
         output.plugins.core.plugins = corePlugins.map((core) => {
@@ -130,8 +134,8 @@ export async function processMediaData(plugins: BasePlugin[]) {
 
     // Process general plugins
     if (generalPlugins.length > 0) {
-        // const generalPlugin = generalPlugins[0];
-        output.plugins.general.description = 'Manage General plugins';
+        output.plugins.general.name = 'General Utilities';  // You can set this dynamically if needed
+        output.plugins.general.description = 'Manage General plugins and utilities';
 
         output.plugins.general.plugins = generalPlugins.map((general) => {
             const generalEntry: GeneralPluginOutput = {
@@ -163,7 +167,6 @@ export async function processMediaData(plugins: BasePlugin[]) {
 }
 
 
-
 // installing plugins
 export const installingPluigns: Writable<Array<InstallingPlugins>> = writable([
 ])
@@ -182,10 +185,12 @@ export const nodeData = writable({})
 const initialState: PluginOutput = {
     plugins: {
         core: {
+            name: '',
             description: '',
             plugins: []
         },
         general: {
+            name: '',
             description: '',
             plugins: []
         }
