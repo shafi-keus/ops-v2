@@ -5,7 +5,6 @@
 
 	onMount(async()=>{
 		await goto("./search");
+		// await goto("./node-config");
 	})
-	// const init = async () => await goto('./search');
-	// $: if ($bleInitialize) init();
 </script>
