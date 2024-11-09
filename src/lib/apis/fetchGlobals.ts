@@ -3,15 +3,14 @@ import axios from 'axios';
 
 interface Schema {
     branch? : string;
-    token:String;
+    token:string;
 }
 
 export default async function (data: Schema) : Promise<any> {
     try {
-        let response = await axios.post(`${APIServerBaseAddr}/getFwDeviceMap`, data, {timeout: 10000});  //100.81.175.52
-        console.log(response);
+        const response = await axios.post(`${APIServerBaseAddr}/getFwDeviceMap`, data, {timeout: 10000});
         return response;
     } catch (e) {
-        return e.response
+        console.error(`failed to fetch the devices json file ${e}`)
     }
 }

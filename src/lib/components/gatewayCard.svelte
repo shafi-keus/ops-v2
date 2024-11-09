@@ -51,9 +51,7 @@
 			gatewayId: gatewayid || ''
 		};
 		if (miniGatewayId.length > 0) reqData.miniGatewayId = miniGatewayId;
-		console.log('ping req data', reqData);
 		let resp = await GatewayPing(reqData);
-		console.log('gateway ping ; ', JSON.stringify(resp));
 		if (!resp?.data?.data) return;
 		else onlineStatus = resp.data.data;
 	};
@@ -227,14 +225,14 @@
 				</span>
 
 				<!-- remove gateway -->
-				<span
+				<!-- <span
 					class="float-end mx-1"
 					on:click={() => {
 						dispatch('remove', index);
 					}}
 				>
 					<img src="/images/close.svg" alt="close" style="width:27px;height:27px;" />
-				</span>
+				</span> -->
 				<!-- <span class="power icon-power float-end mx-2" /> -->
 			</h3>
 			<div class="body">
@@ -335,7 +333,6 @@
 									}
 								}
 								$ch = channel;
-								console.log('selected gateway: ',$selectedGateway);
 								await goto('devices');
 							}}>Demo login</Button
 						>

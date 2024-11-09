@@ -14,7 +14,7 @@
 	import { GatewayCommunicator } from '$lib/utils/changeGatewayMode.js';
 	import { getNodes } from '$lib/hubRpcs/getNodes';
 	import MediaCard from '$lib/components/MediaCard.svelte';
-	import { PluginType, processMediaData, type BasePlugin, type CorePluginOutput, type DevicePluginOutput, type PluginOutput } from '$lib/stores/node-config';
+	import { pluginStore, processMediaData, type PluginOutput } from '$lib/stores/node-config';
 
 	let searching = false;
 	let openmodal = false;
@@ -29,10 +29,9 @@
 	let mediaHubs: any = [];
 
 	async function searchGateways() {
-		searching = true;
-		dupArr = [...arr];
-		await delay(500);
-		searching = false;
+		$gateways = [];
+		arr.length = 0;
+		await init();
 	}
 	function delay(time: number) {
 		return new Promise((resolve) => {
@@ -40,11 +39,11 @@
 		});
 	}
 	let arr: any = [];
-	let dupArr: any = [];
+
 	//removing the gateway from array
-	function handleRemove(event: any) {
-		dupArr = dupArr.filter((_: any, i: any) => i !== event?.detail);
-	}
+	// function handleRemove(event: any) {
+	// 	dupArr = dupArr.filter((_: any, i: any) => i !== event?.detail);
+	// }
 
 	async function getMiniGateways(gatewayData: any, mainGateway: string) {
 		let minigateways: any = [];
@@ -52,7 +51,6 @@
 			let mini = {
 				gatewayId: mainGateway,
 				miniGatewayId: ele[0],
-				//Mini-Gateway-{i}
 				heading: miniInfo[ele[0]]?.name || `keus mini ${i + 1}`,
 				ip: ele[1]?.ip,
 				version: ele[1]?.version,
@@ -60,7 +58,6 @@
 			};
 			minigateways = [mini, ...minigateways];
 		});
-		console.log('minigateways before adding : ', minigateways);
 		return minigateways;
 	}
 
@@ -89,7 +86,6 @@
 			token: token
 		});
 		gatewayInfo = response?.data;
-		console.log('gatewayinfo of main', gatewayInfo);
 		let main = {
 			heading: `KEUS main`,
 			ip: gatewayInfo?.ip,
@@ -99,7 +95,7 @@
 		};
 		// initially adding the main gateway to array
 		if (main) {
-			arr.push(main);
+			arr = [...arr, main];
 		}
 		if (gatewayInfo?.minigateways) {
 			let mini = await getMiniGateways(
@@ -109,26 +105,26 @@
 			//adding the mini gateways to the array
 			if (mini) {
 				mini.forEach((ele: any) => {
-					arr.push(ele);
+					arr = [...arr, ele];
 				});
 			}
 		}
 		// duplicating the main arr to dupArr so as to work the remove functionality correctly
-		dupArr = [...arr];
-		console.log('gateway data : ', dupArr);
+		// dupArr = [...arr];
+		// console.log('gateway data : ', dupArr);
 	}
-
-
 
 	async function fetchMediaHubs() {
-		let nodesData = await getNodes($gatewayId);
-		console.log('nodes data : ', nodesData);
-		mediaHubs = [...nodesData.nodes];
-		processMediaData(mediaHubs[0].plugins);
+		try {
+			let nodesData = await getNodes($gatewayId);
+			mediaHubs = [...nodesData.nodes];
+			processMediaData(mediaHubs[0].plugins);
+		} catch (error) {
+			console.error('failed to fetch the media hubs');
+		}
 	}
 
-	onMount(async () => {
-		console.log('gateways in store are : ', $gateways);
+	const init = async () => {
 		try {
 			searching = true;
 			await fetchMediaHubs();
@@ -138,15 +134,20 @@
 				await fetchGateways();
 			} else {
 				$gateways.forEach((gateway) => {
-					arr.push(gateway);
+					arr = [...arr, gateway];
 				});
-				console.log('Already fetched gateways are : ', JSON.stringify(arr));
-				dupArr = [...arr];
+
+				// console.log('Already fetched gateways are : ', JSON.stringify(arr));
+				// dupArr = [...arr];
 			}
 			searching = false;
 		} catch (e) {
 			console.log('error occured while fetching ' + e);
 		}
+	};
+
+	onMount(async () => {
+		await init();
 	});
 	onDestroy(async () => {
 		$gateways.length = 0;
@@ -156,55 +157,62 @@
 	});
 
 	$: {
-		if (manualIp?.length > 0) active = true;
-		else active = false;
-	}
-	// $:console.log("array is " ,dupArr);
-
-	async function connectToGateway() {
-		try {
-			await GatewayCommunicator.initialize(
-				manualIp,
-				async (e) => {
-					console.log('connection opened for ' + manualIp);
-					let localMain = {
-						heading: 'Local main',
-						ip: manualIp
-					};
-					manualIp = '';
-					try {
-						let data = await GatewayCommunicator.getGatewayMode();
-						if (data?.success) localMain.config = data?.mode == 0 ? 'main' : 'mini';
-					} catch (err) {
-						console.log('error in state fetching : ', err);
-					}
-					arr.unshift(localMain);
-					dupArr = [...arr];
-				},
-				() => {
-					console.log('connection is closed');
-				},
-				(error) => {
-					console.log('found an error');
-				}
-			);
-		} catch (error) {
-			// alert("error in adding the gateway "+error);
-			console.log(error);
+		if (!$gatewayId) {
+			$gateways.length = 0;
+			$pluginStore = {} as PluginOutput;
+			goto('./');
 		}
-		// let localMain = {
-		//   ip: manualIp,
-		//   config : true
-		// };
-		// arr.unshift(localMain);
-		// dupArr = [...arr];
 	}
+
+	
+
+	// async function connectToGateway() {
+	// 	try {
+	// 		await GatewayCommunicator.initialize(
+	// 			manualIp,
+	// 			async (e) => {
+	// 				console.log('connection opened for ' + manualIp);
+	// 				let localMain = {
+	// 					heading: 'Local main',
+	// 					ip: manualIp
+	// 				};
+	// 				manualIp = '';
+	// 				try {
+	// 					let data = await GatewayCommunicator.getGatewayMode();
+	// 					if (data?.success) localMain.config = data?.mode == 0 ? 'main' : 'mini';
+	// 				} catch (err) {
+	// 					console.log('error in state fetching : ', err);
+	// 				}
+	// 				arr.unshift(localMain);
+	// 				dupArr = [...arr];
+	// 			},
+	// 			() => {
+	// 				console.log('connection is closed');
+	// 			},
+	// 			(error) => {
+	// 				console.log('found an error');
+	// 			}
+	// 		);
+	// 	} catch (error) {
+	// 		// alert("error in adding the gateway "+error);
+	// 		console.log(error);
+	// 	}
+	// 	// let localMain = {
+	// 	//   ip: manualIp,
+	// 	//   config : true
+	// 	// };
+	// 	// arr.unshift(localMain);
+	// 	// dupArr = [...arr];
+	// }
 
 	async function pairHub() {
 		console.log(manualIp);
 	}
-
-	const getRegisteredNodes = async () => {};
+	$: {
+		if (manualIp) active = true;
+		else active = false;
+	}
+	
 </script>
 
 <div class="theme-page" style="height: 100vh;padding-bottom:22%">
@@ -257,12 +265,12 @@
 					bind:inputValue={manualIp}
 				/>
 				<div class="my-3">
-					<div style="margin-left: 1.5rem;display:flex;align-items:center;"></div>
+					<!-- <div style="margin-left: 1.5rem;display:flex;align-items:center;"></div> -->
 					<!-- svelte-ignore a11y-click-events-have-key-events -->
 					<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 					<p
 						class="float-end proceed"
-						class:active
+						class:active={active}
 						on:click={() => {
 							if (manualIp) pairHub();
 						}}
@@ -317,14 +325,15 @@
 				</div>
 			</div>
 		</Modal>
-		{#if !searching}
-			<div class="mb-3">
-				{#each mediaHubs as hub}
+		<div class="mb-3">
+			{#each mediaHubs as hub}
+				{#if hub?.nodeId && hub.nodeId != 'undefined'}
 					<MediaCard id={hub.nodeId} />
-				{/each}
-			</div>
-
-			{#each dupArr as ele, index (ele.ip)}
+				{/if}
+			{/each}
+		</div>
+		{#if !searching}
+			{#each arr as ele, index (ele.ip)}
 				<GatewayCards
 					{index}
 					heading={ele?.heading}
@@ -334,7 +343,6 @@
 					gatewayid={ele?.gatewayId}
 					miniGatewayId={ele?.miniGatewayId}
 					configuration={ele?.config}
-					on:remove={handleRemove}
 				/>
 			{:else}
 				<div
@@ -406,7 +414,6 @@
 		color: #185eaf;
 	}
 	.proceed {
-		// color: grey;
 		font-weight: 550;
 		margin-right: 10px;
 	}

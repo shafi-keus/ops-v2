@@ -44,7 +44,7 @@
 		data = { token: token };
 
 		let getGatewaysApiResp = await getAllGatewaysApi(data);
-		console.log(`getGatewaysApiResp : `, JSON.stringify(getGatewaysApiResp));
+		// console.log(`getGatewaysApiResp : `, JSON.stringify(getGatewaysApiResp));
 
 		if (getGatewaysApiResp?.success) {
 			// console.log(
@@ -104,21 +104,18 @@
 				brokerIp: 'kiotp_nats_main_server'
 			};
 		}
-		console.log('gateway info store --> ', $gatewayDetailInfo);
 	};
 
 	async function search(leadID: string) {
 		leadID = leadID.trim();
-		// console.log(JSON.stringify($gatewayData));
 		let value: any = $gatewayData.find((obj: any) => obj.leadId == leadID);
 
 		if (value) {
-			saveGatewayInfo(value);
+			// saveGatewayInfo(value);
 			if ($gateways.length > 0) $gateways.length = 0;
 			$leadId = leadID;
 			$gatewayId = value.gatewayId;
 			$Gateway = $gatewayId + '-HUB-REQ-MANAGER-BINARY-RPC';
-			console.log('data : ' + $gatewayId, $Gateway);
 			leadserach = false;
 
 			//fetching the hub data and storing it in the store....

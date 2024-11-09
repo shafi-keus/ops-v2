@@ -30,6 +30,8 @@
 	import { natsTypeConversionUtils } from '$lib/utils/bufferUtil';
 	import { token } from '$lib/constants/global';
 	import fetchGlobals from '$lib/apis/fetchGlobals';
+	import getAllPlugins from '$lib/apis/getAllPlugins';
+	import { CloudPluginStore, transformCloudPlugins } from '$lib/utils';
 	type EventData = {
 		type: number;
 		data: any;
@@ -434,8 +436,13 @@
 				if (device?.categoryDisplayName && device?.bleDeviceName && device?.isOtaUpgradeable)
 					$deviceCategoryMap[device?.categoryDisplayName].push(device?.bleDeviceName);
 			});
-			console.log('device map : ' + $globalDeviceMap);
-			console.log('category map : ' + JSON.stringify(Object.keys($deviceCategoryMap)));
+			// console.log('device map : ' + $globalDeviceMap);
+			// console.log('category map : ' + JSON.stringify(Object.keys($deviceCategoryMap)));
+			// fetch the plugin store data
+			let storeData = await getAllPlugins();
+			transformCloudPlugins(storeData);
+			console.log("Available Plugins from store : ",$CloudPluginStore)
+
 		} catch (error) {
 			console.error('error while fetching the deviceMap for app');
 		}
@@ -456,7 +463,11 @@
 			let conRes = await nc.connect();
 			console.log('NATS CONNECTION- ', conRes);
 			natsTypeConversionUtils.registerTypes();
-			await BLE.addListener('pluginEvent', (eventData) => processRespEvent(eventData?.data));
+			try {
+				await BLE.addListener('pluginEvent', (eventData) => processRespEvent(eventData?.data));
+			} catch (error) {
+				console.warn('check the platform');
+			}
 			await initApp();
 			await initRequest();
 		} catch (error) {
@@ -477,7 +488,7 @@
 	</style>
 {/if}
 
-<style lang="scss">
+<style>
 	:global(
 			.title-large,
 			.title-medium,

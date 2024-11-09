@@ -35,6 +35,9 @@ importers:
       axios:
         specifier: ^1.7.2
         version: 1.7.7
+      buffer:
+        specifier: ^6.0.3
+        version: 6.0.3
       capacitor-bluetooth:
         specifier: file:../capacitor-bluetooth
         version: file:../capacitor-bluetooth(@capacitor/core@6.1.2)
@@ -44,6 +47,9 @@ importers:
       google-protobuf:
         specifier: ^3.21.2
         version: 3.21.4
+      nats.ws:
+        specifier: ^1.29.2
+        version: 1.29.2
       rpc-websockets:
         specifier: ^7.11.2
         version: 7.11.2
