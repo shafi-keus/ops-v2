@@ -111,7 +111,7 @@
 		let value: any = $gatewayData.find((obj: any) => obj.leadId == leadID);
 
 		if (value) {
-			// saveGatewayInfo(value);
+			saveGatewayInfo(value);
 			if ($gateways.length > 0) $gateways.length = 0;
 			$leadId = leadID;
 			$gatewayId = value.gatewayId;

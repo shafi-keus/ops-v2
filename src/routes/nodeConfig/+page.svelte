@@ -1,19 +1,24 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { page } from '$app/stores';
 	import Button from '$lib/components/Button.svelte';
 	import {
+		installingPluigns,
 		pluginStore,
 		type CorePluginOutput,
 		type GeneralPluginOutput
 	} from '$lib/stores/node-config';
-
 	import { onMount } from 'svelte';
 	import AvailableCategories from '$lib/components/AvailablePluginList.svelte';
 	import PluginCard from '$lib/components/PluginCard.svelte';
 	import { CloudPluginStore } from '$lib/utils';
+	import installServicePlugin from '$lib/apis/installPlugin';
 
-	let isOpen = false;
+	// Constants
+	const IP_ADDRESS = '10.1.4.212';
+	const LAUNCH_TYPE = 'INTER_PP';
 
+	// Interfaces
 	interface PluginCategory {
 		type: string;
 		name: string;
@@ -21,70 +26,109 @@
 		plugins: CorePluginOutput[] | GeneralPluginOutput[];
 	}
 
-	interface AvailablePlugin {
+	interface PageState {
+		nodeId: string;
+		category?: string;
+	}
+
+	interface CloudPlugin {
 		id: string;
 		name: string;
 		description: string;
 		type: string;
+		version?: string;
 	}
 
+	// State
+	let isOpen = false;
+	let nodeId: string = '';
 	let pluginCategories: PluginCategory[] = [];
-	let availablePluginCategories: AvailablePlugin[] = [];
+	let availablePluginCategories: CloudPlugin[] = [];
 
-	const goBack = async () => {
-		history.go(-1);
+	// Navigation handlers
+	const goBack = () => history.go(-1);
+	const addCategory = () => (isOpen = true);
+	const navigateToServicePlugins = (category: string) =>
+		goto('./servicePlugins', { state: { category, nodeId } });
+
+	// Plugin installation handler
+	const handlePluginSelection = async (event: CustomEvent) => {
+		const selectedPlugin = event.detail;
+
+		try {
+			const fullPlugin = await getFullPluginDetails(selectedPlugin.id);
+			if (!fullPlugin) {
+				console.error('Plugin not found in cloud store');
+				return;
+			}
+
+			const pageState = $page.state as PageState;
+
+			const installData: any = {
+				id: fullPlugin.id,
+				launchType: LAUNCH_TYPE,
+				nodeId: pageState.nodeId,
+				version: fullPlugin.version || '1.0.0'
+			};
+
+			$installingPluigns = [...$installingPluigns, fullPlugin];
+			const response = await installServicePlugin(IP_ADDRESS, installData);
+
+			console.log(
+				response.success
+					? 'Plugin installed successfully'
+					: `Failed to install plugin: ${response.error}`
+			);
+		} catch (error) {
+			console.error('Error during plugin installation:', error);
+		}
 	};
 
-	const addCategory = async () => {
-		isOpen = true;
-	};
-
-	const getServicePlugins = async (category: string) => {
-		await goto('./servicePlugins', {
-			state: category
+	// Helper functions
+	function getFullPluginDetails(pluginId: string): Promise<CloudPlugin | null> {
+		return new Promise((resolve) => {
+			CloudPluginStore.subscribe((cloudStore) => {
+				const plugin = cloudStore.core.plugins.find((plugin) => plugin.id === pluginId);
+				resolve(plugin || null);
+			})();
 		});
-	};
+	}
 
-	// Function to get uninstalled core plugins with full object info
 	function getUninstalledCorePlugins(
 		installedPlugins: PluginCategory[],
 		cloudPlugins: typeof $CloudPluginStore
-	): AvailablePlugin[] {
-		// Get installed core plugin names
+	): CloudPlugin[] {
 		const installedCoreNames = new Set(
 			installedPlugins
 				.find((category) => category.type === 'core')
 				?.plugins.map((plugin) => plugin.name) || []
 		);
-		console.log(cloudPlugins.core.plugins)
 
-		// Get all core plugins from cloud with full object info
-		const cloudCorePlugins = cloudPlugins.core.plugins
-			.filter((plugin) => !installedCoreNames.has(plugin.name))
-			.map((plugin) => ({
-				id: plugin.id, // Fallback to name if id doesn't exist
-				name: plugin.name,
-				description: plugin.description,
-				type: plugin.type
+		const installingPluginNames = new Set(
+			$installingPluigns
+				.filter((plugin) => plugin.type === 'CORE_PLUGIN')
+				.map((plugin) => plugin.name)
+		);
+
+		return cloudPlugins.core.plugins
+			.filter(
+				(plugin) => !installedCoreNames.has(plugin.name) && !installingPluginNames.has(plugin.name)
+			)
+			.map(({ id, name, description, type }) => ({
+				id,
+				name,
+				description,
+				type
 			}));
-
-		return cloudCorePlugins;
 	}
 
-	const handlePluginSelection = async (event: CustomEvent) => {
-		const selectedPlugin = event.detail;
-		console.log('Selected Plugin Full Object:', selectedPlugin);
-
-		// Here you can handle the plugin installation
-		// You'll have access to all plugin details through selectedPlugin
-	};
-
+	// Lifecycle and reactivity
 	onMount(() => {
 		const store = $pluginStore.plugins;
+		nodeId = <string>$page.state;
+
 		pluginCategories = Object.entries(store)
-			.filter(([_, data]) => {
-				return data && Array.isArray(data.plugins) && data.plugins.length > 0;
-			})
+			.filter(([_, data]) => data?.plugins?.length > 0)
 			.map(([type, data]) => ({
 				type,
 				name: data?.name || '',
@@ -92,46 +136,64 @@
 				plugins: data?.plugins
 			}));
 
-		// Subscribe to CloudPluginStore to get available plugins
+		// Single subscription to handle both store changes
 		const unsubscribe = CloudPluginStore.subscribe((cloudStore) => {
-			availablePluginCategories = getUninstalledCorePlugins(pluginCategories, cloudStore);
+			if (pluginCategories.length > 0) {
+				availablePluginCategories = getUninstalledCorePlugins(pluginCategories, cloudStore);
+			}
 		});
 
-		return () => unsubscribe();
+		return unsubscribe;
 	});
+
+	// Reactive statement for store changes
+	$: if (pluginCategories.length > 0) {
+		availablePluginCategories = getUninstalledCorePlugins(pluginCategories, $CloudPluginStore);
+	}
 </script>
 
 <div class="theme-page">
-	<div class="header bottom-shadow">
+	<header class="header bottom-shadow">
 		<p class="title-large" style="padding-left: 8px;">Plugin Categories</p>
-	</div>
-	<div class="content">
+	</header>
+
+	<main class="content">
 		{#each pluginCategories as category}
-			{#if category.type == 'core'}
+			{#if category.type === 'core'}
 				{#each category.plugins as plugin}
 					<PluginCard
 						name={plugin.name}
 						desc={plugin.description}
-						on:click={() => getServicePlugins(category.type)}
+						on:click={() => navigateToServicePlugins(category.type)}
 					/>
 				{/each}
 			{:else}
 				<PluginCard
 					name={category.name}
 					desc={category.description}
-					on:click={() => getServicePlugins(category.type)}
+					on:click={() => navigateToServicePlugins(category.type)}
 				/>
 			{/if}
 		{/each}
-	</div>
-	<div class="footer">
+
+		{#if $installingPluigns.length > 0}
+			{#each $installingPluigns as plugin}
+				{#if plugin.type === 'CORE_PLUGIN'}
+					<PluginCard name={plugin.name} installing={true} />
+				{/if}
+			{/each}
+		{/if}
+	</main>
+
+	<footer class="footer">
 		<Button circle color="black" on:click={goBack} size="lg">
 			<span class="icon-chevron-left-1" />
 		</Button>
 		<Button circle size="lg" on:click={addCategory}>
 			<span class="icon-plus-1" />
 		</Button>
-	</div>
+	</footer>
+
 	{#if isOpen}
 		<AvailableCategories
 			bind:isOpen

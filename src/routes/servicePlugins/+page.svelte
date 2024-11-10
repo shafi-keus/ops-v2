@@ -9,81 +9,99 @@
 	import { getNodes } from '$lib/hubRpcs/getNodes';
 	import { gatewayId } from '$lib/stores';
 	import { CloudPluginStore } from '$lib/utils';
+	import installServicePlugin from '$lib/apis/installPlugin';
 
-	let category = '';
+	// Constants
+	const IP_ADDRESS = '10.1.4.212';
 
-	let type = $page.state;
+	// Interfaces
+	interface PageState {
+		category: 'core' | 'general';
+		nodeId: string;
+	}
+
+	interface PluginListItem {
+		name: string;
+		id: string;
+		description?: string;
+		version?: string;
+		type?: string;
+	}
+
+	interface IPluginInstall {
+		nodeId: string;
+		launchType: 'INTER_PP' | 'INTRA_PP';
+		id: string;
+		version: string;
+	}
+
+	// State
+	const pageState = $page.state as PageState;
+	let category: 'core' | 'general' = pageState.category;
+	let nodeId: string = pageState.nodeId;
 	let isOpen = false;
-	let pluginServices: any[] = [];
 	let showModal = false;
-	let selectedPlugin: any = {};
+	let selectedPlugin: PluginListItem = {} as PluginListItem;
+	let pluginServices: PluginListItem[] = [];
+	let availablePlugins: PluginListItem[] = [];
 
-	const goBack = async () => {
-		history.go(-1);
-	};
-
-	const addPlugin = async () => {
-		isOpen = true;
-	};
-
-	const showSettings = async (plugin: string) => {
+	// Navigation handlers
+	const goBack = () => history.go(-1);
+	const addPlugin = () => (isOpen = true);
+	const showSettings = (plugin: PluginListItem) => {
 		showModal = true;
 		selectedPlugin = plugin;
 	};
 
+	// Plugin management functions
 	async function fetchMediaHubs() {
 		try {
-			let nodesData = await getNodes($gatewayId);
-			let mediaHubs = [...nodesData.nodes];
-			processMediaData(mediaHubs[0].plugins);
+			const nodesData = await getNodes($gatewayId);
+			const [firstHub] = nodesData.nodes;
+			processMediaData(firstHub.plugins);
 		} catch (error) {
-			console.error('failed to fetch the media hubs');
+			console.error('Failed to fetch media hubs:', error);
 		}
 	}
 
-	const unInstallPlugin = async () => {
+	async function unInstallPlugin() {
 		showModal = false;
+		if (!selectedPlugin?.name) return;
 
-		if (selectedPlugin) {
-			if (confirm(`Do you want to uninstall ${selectedPlugin.name}`)) {
-				await fetchMediaHubs();
-				await init();
-				console.log('uninstalled', selectedPlugin);
-			}
+		if (confirm(`Do you want to uninstall ${selectedPlugin.name}`)) {
+			await fetchMediaHubs();
+			await init();
+			console.log('Uninstalled:', selectedPlugin);
 		}
-	};
-
-	onMount(() => {
-		init();
-	});
-
-	// Create a separate interface or type for list items
-	interface PluginListItem {
-		name: string;
-		id: string;
-		// Add other properties you want to display in the list
 	}
 
-	let availablePlugins: PluginListItem[] = [];
-
-	// In your main component where you prepare the data
-	function getUninstalledDevicePlugins() {
+	function getUninstalledDevicePlugins(): PluginListItem[] {
 		const installedPluginIds = new Set(pluginServices.map((service) => service.id));
 		const installingPluginIds = new Set($installingPluigns.map((plugin) => plugin.id));
-
 		let cloudDevicePlugins: PluginListItem[] = [];
 
 		CloudPluginStore.subscribe((cloudStore) => {
-			cloudStore.core.plugins.forEach((plugin) => {
-				if (plugin.device_plugins && plugin.device_plugins.length > 0) {
-					// Transform the device plugins to match PluginListItem interface
-					const transformedPlugins = plugin.device_plugins.map((dp) => ({
-						name: dp.name,
-						id: dp.id
-					}));
-					cloudDevicePlugins.push(...transformedPlugins);
-				}
-			});
+			if (category === 'core') {
+				cloudStore.core.plugins.forEach((plugin) => {
+					if (plugin.device_plugins?.length) {
+						cloudDevicePlugins.push(
+							...plugin.device_plugins.map((dp) => ({
+								name: dp.name,
+								id: dp.id,
+								description: dp.description,
+								version: dp.version
+							}))
+						);
+					}
+				});
+			} else {
+				cloudDevicePlugins = cloudStore.general.plugins.map((plugin) => ({
+					name: plugin.name,
+					id: plugin.id,
+					description: plugin.description,
+					version: plugin.version
+				}));
+			}
 		});
 
 		return cloudDevicePlugins.filter(
@@ -91,151 +109,194 @@
 		);
 	}
 
-	const init = async () => {
-		category = $page.state as 'core' | 'general';
+	const handlePluginInstallation = async (event: CustomEvent) => {
+		const selectedPlugin = event.detail;
+
+		try {
+			const fullPlugin = await new Promise<PluginListItem | null>((resolve) => {
+				CloudPluginStore.subscribe((cloudStore) => {
+					let found = null;
+					cloudStore.core.plugins.forEach((corePlugin) => {
+						if (corePlugin.device_plugins) {
+							const plugin = corePlugin.device_plugins.find((dp) => dp.id === selectedPlugin.id);
+							if (plugin) found = plugin;
+						}
+					});
+					resolve(found);
+				})();
+			});
+
+			if (fullPlugin) {
+				const installData: IPluginInstall = {
+					id: fullPlugin.id,
+					launchType: 'INTER_PP',
+					nodeId: pageState.nodeId,
+					version: fullPlugin.version || '1.0.0'
+				};
+
+				$installingPluigns = [...$installingPluigns, { ...fullPlugin, coreType: category }];
+				await installServicePlugin(IP_ADDRESS, installData);
+				availablePlugins = getUninstalledDevicePlugins();
+			}
+		} catch (error) {
+			console.error('Installation failed:', error);
+		}
+	};
+
+	async function init() {
 		if (category === 'core') {
-			pluginServices = $pluginStore.plugins.core.plugins.reduce((acc: any[], plugin) => {
-				if (plugin.device_plugins && plugin.device_plugins.length > 0) {
+			pluginServices = $pluginStore.plugins.core.plugins.reduce((acc: PluginListItem[], plugin) => {
+				if (plugin.device_plugins?.length) {
 					return [...acc, ...plugin.device_plugins];
 				}
 				return acc;
 			}, []);
-
-			// Now storing only the required information
-			availablePlugins = getUninstalledDevicePlugins();
 		} else {
 			pluginServices = $pluginStore.plugins.general.plugins;
-			availablePlugins = [];
 		}
-	};
 
-	const installPlugin = async (event: CustomEvent) => {
-		const selectedPlugin = event.detail;
+		availablePlugins = getUninstalledDevicePlugins();
+	}
 
-		// Find the full plugin object using the ID
-		CloudPluginStore.subscribe((cloudStore) => {
-			let fullPlugin = {
-				name: '',
-				id: '',
-				type: ''
-			};
-			cloudStore.core.plugins.forEach((corePlugin) => {
-				if (corePlugin.device_plugins) {
-					const found = corePlugin.device_plugins.find((dp) => dp.id === selectedPlugin.id);
-					if (found) fullPlugin = found;
-				}
-			});
+	onMount(init);
 
-			if (fullPlugin) {
-				console.log('Full Plugin Object:', fullPlugin);
-				$installingPluigns = [...$installingPluigns, { ...fullPlugin, coreType: category }];
-				availablePlugins = getUninstalledDevicePlugins();
-			}
-		});
-	};
-	// Watch for changes in installingPlugins
+	// Reactive statement for store changes
 	$: {
-		$installingPluigns; // Track changes in installing plugins
-		$CloudPluginStore; // Track changes in cloud store
-		if (category === 'core' && pluginServices.length >= 0) {
+		$installingPluigns;
+		$CloudPluginStore;
+		if (pluginServices.length >= 0) {
 			availablePlugins = getUninstalledDevicePlugins();
 		}
 	}
 </script>
 
 <div class="theme-page">
-	<Modal bind:isOpen={showModal} title="Plugin Settings" style="height:13vh;">
-		<div class="p-2" style="display: flex;align-items: center; gap:8px" on:click={unInstallPlugin}>
-			<span class="icon-delete fsipx-24" />
-			Uninstall plugin
-		</div>
-	</Modal>
+    <Modal bind:isOpen={showModal} title="Plugin Settings" style="height:13vh;">
+        <div class="p-2 uninstall-button" on:click={unInstallPlugin}>
+            <span class="icon-delete fsipx-24" />
+            Uninstall plugin
+        </div>
+    </Modal>
 
-	<div class="header bottom-shadow">
-		<p class="title-large" style="padding-left: 8px;">
-			{#if type === 'core'}
-				Device Plugins
-			{:else if type === 'general'}
-				General Plugins
-			{/if}
-		</p>
-	</div>
-	<div class="content">
-		{#if pluginServices.length > 0}
-			{#each pluginServices as service, i (service.name)}
-				<PluginCard
-					name={service.name}
-					desc={service.description}
-					on:longPressed={() => showSettings(service)}
-				/>
-			{/each}
-		{:else}
-			<p class="no-plugins">
-				{type === 'core' ? 'No device plugins available' : 'No general plugins available'}
-			</p>
-		{/if}
+    <header class="header bottom-shadow">
+        <p class="title-large" style="padding-left: 8px;">
+            {category === 'core' ? 'Device Plugins' : 'General Plugins'}
+        </p>
+    </header>
 
-		{#if $installingPluigns.length > 0}
-			{#each $installingPluigns as plugin}
-				{#if plugin.coreType == category}
-					<PluginCard name={plugin.name} installing={true} />
-				{/if}
-			{/each}
-		{/if}
-	</div>
+    <main class="content-container">
+        <div class="content">
+            {#if pluginServices.length > 0}
+                {#each pluginServices as service (service.id)}
+                    <PluginCard
+                        name={service.name}
+                        desc={service.description}
+                        on:longPressed={() => showSettings(service)}
+                    />
+                {/each}
+            {:else}
+                <p class="no-plugins">
+                    {category === 'core' ? 'No device plugins available' : 'No general plugins available'}
+                </p>
+            {/if}
 
-	<div class="footer">
-		<Button circle color="black" on:click={goBack} size="lg">
-			<span class="icon-chevron-left-1" />
-		</Button>
-		<Button circle size="lg" on:click={addPlugin}>
-			<span class="icon-plus-1" />
-		</Button>
-	</div>
+            {#if $installingPluigns.length > 0}
+                {#each $installingPluigns as plugin (plugin.id)}
+                    {#if plugin.coreType === category}
+                        <PluginCard name={plugin.name} installing={true} />
+                    {/if}
+                {/each}
+            {/if}
+        </div>
+    </main>
 
-	<AvailablePlugins
-		bind:isOpen
-		title={type === 'core' ? 'Device Plugins' : 'General Plugins'}
-		list={availablePlugins}
-		on:PluginSelection={installPlugin}
-	/>
+    <footer class="footer">
+        <Button circle color="black" on:click={goBack} size="lg">
+            <span class="icon-chevron-left-1" />
+        </Button>
+        <Button circle size="lg" on:click={addPlugin}>
+            <span class="icon-plus-1" />
+        </Button>
+    </footer>
+
+    <AvailablePlugins
+        bind:isOpen
+        title={category === 'core' ? 'Device Plugins' : 'General Plugins'}
+        list={availablePlugins}
+        on:PluginSelection={handlePluginInstallation}
+    />
 </div>
 
 <style>
-	* {
-		margin: 0;
-		padding: 0;
-	}
-	.header {
-		width: 100%;
-		padding: 16px 8px;
-	}
-	.content {
-		width: 100%;
-		display: flex;
-		flex-direction: column;
-		gap: 16px;
-		padding-inline: 8px;
-		padding-block: 16px;
-		flex-grow: 1;
-	}
+    * {
+        margin: 0;
+        padding: 0;
+    }
+    .theme-page {
+        height: 100vh;
+        width: 100vw;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .header {
+        width: 100%;
+        padding: 16px 8px;
+        flex-shrink: 0; /* Prevent header from shrinking */
+    }
 
-	.theme-page {
-		height: 100vh;
-		width: 100vw;
-		position: relative;
-	}
-	.footer {
-		position: absolute;
-		bottom: 16px;
-		width: 100%;
-		display: flex;
-		justify-content: space-between;
-		padding: 16px;
-	}
+    .content-container {
+        flex: 1;
+        overflow: hidden; /* Hide overflow */
+        position: relative;
+        padding-bottom: 80px; /* Add space for footer */
+    }
 
-	.no-plugins {
-		text-align: center;
-		padding: 2rem;
-	}
+    .content {
+        height: 100%;
+        overflow-y: auto; /* Enable vertical scrolling */
+        padding: 16px 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .footer {
+        position: absolute;
+        bottom: 16px;
+        left: 0;
+        right: 0;
+        display: flex;
+        justify-content: space-between;
+        padding: 16px;
+        /* background: var(--background-color, white); Add background to footer */
+        z-index: 1; /* Ensure footer stays above content */
+    }
+
+    .uninstall-button {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+    }
+
+    .no-plugins {
+        text-align: center;
+        padding: 2rem;
+    }
+
+    /* Optional: Add scrollbar styling */
+    .content::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .content::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .content::-webkit-scrollbar-thumb {
+        background-color: rgba(0, 0, 0, 0.2);
+        border-radius: 3px;
+    }
 </style>

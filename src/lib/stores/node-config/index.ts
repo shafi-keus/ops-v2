@@ -33,6 +33,7 @@ export interface PluginBase {
     version: string;
     description: string;
     device_plugins: DevicePluginOutput[];
+    id:string
 }
 
 export interface CorePluginOutput extends PluginBase {
@@ -61,7 +62,7 @@ export interface InstallingPlugins  {
     version? : string
     progress?: number;
     id : string;
-    type : string;
+    type? : string;
     coreType? : string
 }
 
@@ -94,6 +95,7 @@ const processPluginSection = <T extends CorePluginOutput | GeneralPluginOutput>(
         version: plugin.version,
         type,
         description: plugin.description,
+        id : plugin.id,
         device_plugins: devicePlugins
             .filter(device => device.id.startsWith(plugin.id))
             .map(createDevicePlugin)

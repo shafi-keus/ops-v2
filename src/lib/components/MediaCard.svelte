@@ -32,5 +32,11 @@
 	>
 		Node Id : {id}
 	</p>
-	<Button block on:click={() => goto('./nodeConfig')}>Plugins</Button>
+	<Button
+		block
+		on:click={() =>
+			goto('./nodeConfig', {
+				state: id
+			})}>Plugins</Button
+	>
 </Card>
