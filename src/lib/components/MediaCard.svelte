@@ -36,7 +36,9 @@
 		block
 		on:click={() =>
 			goto('./nodeConfig', {
-				state: id
+				state: {
+					nodeId: id
+				}
 			})}>Plugins</Button
 	>
 </Card>

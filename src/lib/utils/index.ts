@@ -266,3 +266,11 @@ export function transformCloudPlugins(cloudPlugins: CloudPlugin[]): void {
     CloudPluginStore.set(organized);
 }
 
+
+
+export const INTER_PLUGINS = new Set([
+   '1.0.0.kiotp.plugins.core.cameras.keus',
+   '1.0.0.kiotp.plugins.core.puppeteer',
+   'kiotp.plugins.core.deepmedia.tv.appletv',
+   'kiotp.plugins.core.deepmedia.speaker.sonos'
+]);

@@ -5,6 +5,7 @@
 	import {
 		installingPluigns,
 		pluginStore,
+		processMediaData,
 		type CorePluginOutput,
 		type GeneralPluginOutput
 	} from '$lib/stores/node-config';
@@ -13,10 +14,12 @@
 	import PluginCard from '$lib/components/PluginCard.svelte';
 	import { CloudPluginStore } from '$lib/utils';
 	import installServicePlugin from '$lib/apis/installPlugin';
+	import { getNodes } from '$lib/hubRpcs/getNodes';
+	import { gatewayId } from '$lib/stores';
 
 	// Constants
-	const IP_ADDRESS = '10.1.4.212';
-	const LAUNCH_TYPE = 'INTER_PP';
+	const IP_ADDRESS = '10.1.4.107';
+	const LAUNCH_TYPE = 'INTRA_PP';
 
 	// Interfaces
 	interface PluginCategory {
@@ -28,7 +31,6 @@
 
 	interface PageState {
 		nodeId: string;
-		category?: string;
 	}
 
 	interface CloudPlugin {
@@ -73,6 +75,9 @@
 
 			$installingPluigns = [...$installingPluigns, fullPlugin];
 			const response = await installServicePlugin(IP_ADDRESS, installData);
+
+			await fetchMediaHubs();
+			init();
 
 			console.log(
 				response.success
@@ -122,11 +127,20 @@
 			}));
 	}
 
-	// Lifecycle and reactivity
-	onMount(() => {
+	// Plugin management functions
+	async function fetchMediaHubs() {
+		try {
+			const nodesData = await getNodes($gatewayId);
+			const [firstHub] = nodesData.nodes;
+			processMediaData(firstHub.plugins);
+		} catch (error) {
+			console.error('Failed to fetch media hubs:', error);
+		}
+	}
+
+	const init = async () => {
 		const store = $pluginStore.plugins;
 		nodeId = <string>$page.state;
-
 		pluginCategories = Object.entries(store)
 			.filter(([_, data]) => data?.plugins?.length > 0)
 			.map(([type, data]) => ({
@@ -135,12 +149,16 @@
 				description: data?.description || '',
 				plugins: data?.plugins
 			}));
+	};
 
+	// Lifecycle and reactivity
+	onMount(() => {
+		init();
 		// Single subscription to handle both store changes
 		const unsubscribe = CloudPluginStore.subscribe((cloudStore) => {
-			if (pluginCategories.length > 0) {
-				availablePluginCategories = getUninstalledCorePlugins(pluginCategories, cloudStore);
-			}
+			// if (pluginCategories.length > 0) {
+			availablePluginCategories = getUninstalledCorePlugins(pluginCategories, cloudStore);
+			// }
 		});
 
 		return unsubscribe;

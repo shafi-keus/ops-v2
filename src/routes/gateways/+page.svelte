@@ -131,7 +131,8 @@
 		ipmanual = false;
 		try {
 			searching = true;
-			await registerNode(manualIp, $gatewayDetailInfo);
+			let resp = await registerNode(manualIp, $gatewayDetailInfo);
+			console.log("resp-------->",resp)
 			await delay(DELAY_TIME);
 			await fetchMediaHubs();
 		} catch (error) {
@@ -197,7 +198,7 @@
 	</section>
 
 	<main class="content">
-		<div class="media-hubs">
+		<div class="media-hubs mb-3">
 			{#each mediaHubs as hub}
 				{#if hub?.nodeId && hub.nodeId !== 'undefined'}
 					<MediaCard id={hub.nodeId} />

@@ -14,46 +14,46 @@ interface IPluginInstall {
 
 interface Response {
     success: boolean;
-    error?: any
+    error?: unknown
 }
 
 export default async function (ip: string, data: IPluginInstall): Promise<Response> {
     const addrs = `http://${ip}:3000/keus/v1/site_manager/InstallPlugin`
+    // const addrs = `/keus/v1/site_manager/InstallPlugin`;
+
+    console.log("Install plugin req data : ", data)
+
 
     try {
         const response = await axios.post(
             addrs,
             data,
-            { timeout: 10000 }
+            { timeout: 10000000 }
         );
         console.log(response)
-        
+        installingPluigns.update(plugins =>
+            plugins.filter(plugin => plugin.id !== data.id)
+        );
+
         if (!response || !response.data.success) {
-            // Remove failed plugin from installing plugins store
-            installingPluigns.update(plugins => 
-                plugins.filter(plugin => plugin.id !== data.id)
-            );
+
             return {
-                success : false,
-                error : 'unknow error'
+                success: false,
+                error: 'unknow error'
             }
         }
 
-        console.log("installing plugins in try : ",get(installingPluigns))
-
-        
         return response.data;
     } catch (error) {
-        // Remove failed plugin in case of error
-        
-        installingPluigns.update(plugins => 
+
+        installingPluigns.update(plugins =>
             plugins.filter(plugin => plugin.id !== data.id)
         );
-        console.log("installing plugins in catch : ",get(installingPluigns))
-        
+        console.error("Plugin installation failed", get(installingPluigns))
+
         return {
             success: false,
-            error: 'unknown error'
+            error
         };
     }
 }

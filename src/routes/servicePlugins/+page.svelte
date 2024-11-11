@@ -8,11 +8,11 @@
 	import Modal from '$lib/components/modal.svelte';
 	import { getNodes } from '$lib/hubRpcs/getNodes';
 	import { gatewayId } from '$lib/stores';
-	import { CloudPluginStore } from '$lib/utils';
+	import { CloudPluginStore, INTER_PLUGINS } from '$lib/utils';
 	import installServicePlugin from '$lib/apis/installPlugin';
 
 	// Constants
-	const IP_ADDRESS = '10.1.4.212';
+	const IP_ADDRESS = '10.1.4.107';
 
 	// Interfaces
 	interface PageState {
@@ -109,11 +109,15 @@
 		);
 	}
 
+	function determineLaunchType(pluginId: string): 'INTER_PP' | 'INTRA_PP' {
+		return INTER_PLUGINS.has(pluginId) ? 'INTER_PP' : 'INTRA_PP';
+	}
+
 	const handlePluginInstallation = async (event: CustomEvent) => {
 		const selectedPlugin = event.detail;
 
 		try {
-			const fullPlugin = await new Promise<PluginListItem | null>((resolve) => {
+			const plugin = await new Promise<PluginListItem | null>((resolve) => {
 				CloudPluginStore.subscribe((cloudStore) => {
 					let found = null;
 					cloudStore.core.plugins.forEach((corePlugin) => {
@@ -126,16 +130,21 @@
 				})();
 			});
 
-			if (fullPlugin) {
+			if (plugin) {
+				console.log("nodeId : ",pageState.nodeId)
 				const installData: IPluginInstall = {
-					id: fullPlugin.id,
-					launchType: 'INTER_PP',
-					nodeId: pageState.nodeId,
-					version: fullPlugin.version || '1.0.0'
+					id: plugin.id,
+					launchType: determineLaunchType(plugin.id),
+					nodeId: pageState.nodeId.nodeId,
+					version: plugin.version || '1.0.0'
 				};
 
-				$installingPluigns = [...$installingPluigns, { ...fullPlugin, coreType: category }];
-				await installServicePlugin(IP_ADDRESS, installData);
+				$installingPluigns = [...$installingPluigns, { ...plugin, coreType: category }];
+				let resp = await installServicePlugin(IP_ADDRESS, installData);
+				if(resp?.success){
+					await fetchMediaHubs();
+					init()
+				}
 				availablePlugins = getUninstalledDevicePlugins();
 			}
 		} catch (error) {
@@ -171,132 +180,132 @@
 </script>
 
 <div class="theme-page">
-    <Modal bind:isOpen={showModal} title="Plugin Settings" style="height:13vh;">
-        <div class="p-2 uninstall-button" on:click={unInstallPlugin}>
-            <span class="icon-delete fsipx-24" />
-            Uninstall plugin
-        </div>
-    </Modal>
+	<Modal bind:isOpen={showModal} title="Plugin Settings" style="height:13vh;">
+		<div class="p-2 uninstall-button" on:click={unInstallPlugin}>
+			<span class="icon-delete fsipx-24" />
+			Uninstall plugin
+		</div>
+	</Modal>
 
-    <header class="header bottom-shadow">
-        <p class="title-large" style="padding-left: 8px;">
-            {category === 'core' ? 'Device Plugins' : 'General Plugins'}
-        </p>
-    </header>
+	<header class="header bottom-shadow">
+		<p class="title-large" style="padding-left: 8px;">
+			{category === 'core' ? 'Device Plugins' : 'General Plugins'}
+		</p>
+	</header>
 
-    <main class="content-container">
-        <div class="content">
-            {#if pluginServices.length > 0}
-                {#each pluginServices as service (service.id)}
-                    <PluginCard
-                        name={service.name}
-                        desc={service.description}
-                        on:longPressed={() => showSettings(service)}
-                    />
-                {/each}
-            {:else}
-                <p class="no-plugins">
-                    {category === 'core' ? 'No device plugins available' : 'No general plugins available'}
-                </p>
-            {/if}
+	<main class="content-container">
+		<div class="content">
+			{#if pluginServices.length > 0}
+				{#each pluginServices as service (service.id)}
+					<PluginCard
+						name={service.name}
+						desc={service.description}
+						on:longPressed={() => showSettings(service)}
+					/>
+				{/each}
+			<!-- {:else}
+				<p class="no-plugins">
+					{category === 'core' ? 'No device plugins available' : 'No general plugins available'}
+				</p> -->
+			{/if}
 
-            {#if $installingPluigns.length > 0}
-                {#each $installingPluigns as plugin (plugin.id)}
-                    {#if plugin.coreType === category}
-                        <PluginCard name={plugin.name} installing={true} />
-                    {/if}
-                {/each}
-            {/if}
-        </div>
-    </main>
+			{#if $installingPluigns.length > 0}
+				{#each $installingPluigns as plugin (plugin.id)}
+					{#if plugin.coreType === category}
+						<PluginCard name={plugin.name} installing={true} />
+					{/if}
+				{/each}
+			{/if}
+		</div>
+	</main>
 
-    <footer class="footer">
-        <Button circle color="black" on:click={goBack} size="lg">
-            <span class="icon-chevron-left-1" />
-        </Button>
-        <Button circle size="lg" on:click={addPlugin}>
-            <span class="icon-plus-1" />
-        </Button>
-    </footer>
+	<footer class="footer">
+		<Button circle color="black" on:click={goBack} size="lg">
+			<span class="icon-chevron-left-1" />
+		</Button>
+		<Button circle size="lg" on:click={addPlugin}>
+			<span class="icon-plus-1" />
+		</Button>
+	</footer>
 
-    <AvailablePlugins
-        bind:isOpen
-        title={category === 'core' ? 'Device Plugins' : 'General Plugins'}
-        list={availablePlugins}
-        on:PluginSelection={handlePluginInstallation}
-    />
+	<AvailablePlugins
+		bind:isOpen
+		title={category === 'core' ? 'Device Plugins' : 'General Plugins'}
+		list={availablePlugins}
+		on:PluginSelection={handlePluginInstallation}
+	/>
 </div>
 
 <style>
-    * {
-        margin: 0;
-        padding: 0;
-    }
-    .theme-page {
-        height: 100vh;
-        width: 100vw;
-        position: relative;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    .header {
-        width: 100%;
-        padding: 16px 8px;
-        flex-shrink: 0; /* Prevent header from shrinking */
-    }
+	* {
+		margin: 0;
+		padding: 0;
+	}
+	.theme-page {
+		height: 100vh;
+		width: 100vw;
+		position: relative;
+		display: flex;
+		flex-direction: column;
+	}
 
-    .content-container {
-        flex: 1;
-        overflow: hidden; /* Hide overflow */
-        position: relative;
-        padding-bottom: 80px; /* Add space for footer */
-    }
+	.header {
+		width: 100%;
+		padding: 16px 8px;
+		flex-shrink: 0; /* Prevent header from shrinking */
+	}
 
-    .content {
-        height: 100%;
-        overflow-y: auto; /* Enable vertical scrolling */
-        padding: 16px 8px;
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
+	.content-container {
+		flex: 1;
+		overflow: hidden; /* Hide overflow */
+		position: relative;
+		padding-bottom: 80px; /* Add space for footer */
+	}
 
-    .footer {
-        position: absolute;
-        bottom: 16px;
-        left: 0;
-        right: 0;
-        display: flex;
-        justify-content: space-between;
-        padding: 16px;
-        /* background: var(--background-color, white); Add background to footer */
-        z-index: 1; /* Ensure footer stays above content */
-    }
+	.content {
+		height: 100%;
+		overflow-y: auto; /* Enable vertical scrolling */
+		padding: 16px 8px;
+		display: flex;
+		flex-direction: column;
+		gap: 16px;
+	}
 
-    .uninstall-button {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-    }
+	.footer {
+		position: absolute;
+		bottom: 16px;
+		left: 0;
+		right: 0;
+		display: flex;
+		justify-content: space-between;
+		padding: 16px;
 
-    .no-plugins {
-        text-align: center;
-        padding: 2rem;
-    }
+		z-index: 1; /* Ensure footer stays above content */
+	}
 
-    /* Optional: Add scrollbar styling */
-    .content::-webkit-scrollbar {
-        width: 6px;
-    }
+	.uninstall-button {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		cursor: pointer;
+	}
 
-    .content::-webkit-scrollbar-track {
-        background: transparent;
-    }
+	.no-plugins {
+		text-align: center;
+		padding: 2rem;
+	}
 
-    .content::-webkit-scrollbar-thumb {
-        background-color: rgba(0, 0, 0, 0.2);
-        border-radius: 3px;
-    }
+	/* Optional: Add scrollbar styling */
+	.content::-webkit-scrollbar {
+		width: 6px;
+	}
+
+	.content::-webkit-scrollbar-track {
+		background: transparent;
+	}
+
+	.content::-webkit-scrollbar-thumb {
+		background-color: rgba(0, 0, 0, 0.2);
+		border-radius: 3px;
+	}
 </style>
