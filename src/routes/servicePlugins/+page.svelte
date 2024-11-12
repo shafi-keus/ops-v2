@@ -1,23 +1,29 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import Button from '$lib/components/Button.svelte';
-	import { installingPluigns, pluginStore, processMediaData } from '$lib/stores/node-config';
 	import { onMount } from 'svelte';
-	import AvailablePlugins from '$lib/components/AvailablePluginList.svelte';
-	import PluginCard from '$lib/components/PluginCard.svelte';
-	import Modal from '$lib/components/modal.svelte';
+	import { installingPluigns, pluginStore, processMediaData } from '$lib/stores/node-config';
 	import { getNodes } from '$lib/hubRpcs/getNodes';
 	import { gatewayId } from '$lib/stores';
 	import { CloudPluginStore, INTER_PLUGINS } from '$lib/utils';
 	import installServicePlugin from '$lib/apis/installPlugin';
+	import uninstallPlugin from '$lib/apis/uninstallPlugin';
 
-	// Constants
-	const IP_ADDRESS = '10.1.4.107';
+	// Components
+	import Button from '$lib/components/Button.svelte';
+	import AvailablePlugins from '$lib/components/AvailablePluginList.svelte';
+	import PluginCard from '$lib/components/PluginCard.svelte';
+	import Modal from '$lib/components/modal.svelte';
+	import { installPluginThroughNats } from '$lib/hubRpcs/installPlugin';
+	import { unInstallPluginThroughNats } from '$lib/hubRpcs/unInstallPlugin';
 
-	// Interfaces
+	// Types
+	type LaunchType = 'INTER_PP' | 'INTRA_PP';
+	type CategoryType = 'core' | 'general';
+
 	interface PageState {
-		category: 'core' | 'general';
+		category: CategoryType;
 		nodeId: string;
+		categoryId: string;
 	}
 
 	interface PluginListItem {
@@ -26,187 +32,201 @@
 		description?: string;
 		version?: string;
 		type?: string;
+		coreType?: CategoryType;
 	}
 
-	interface IPluginInstall {
+	interface PluginInstallData {
 		nodeId: string;
-		launchType: 'INTER_PP' | 'INTRA_PP';
+		launchType: LaunchType;
 		id: string;
 		version: string;
 	}
 
-	// State
-	const pageState = $page.state as PageState;
-	let category: 'core' | 'general' = pageState.category;
-	let nodeId: string = pageState.nodeId;
-	let isOpen = false;
-	let showModal = false;
-	let selectedPlugin: PluginListItem = {} as PluginListItem;
-	let pluginServices: PluginListItem[] = [];
-	let availablePlugins: PluginListItem[] = [];
+	interface PluginUninstallData {
+		nodeId: string;
+		pluginId: string;
+		version: string;
+	}
 
-	// Navigation handlers
-	const goBack = () => history.go(-1);
-	const addPlugin = () => (isOpen = true);
-	const showSettings = (plugin: PluginListItem) => {
-		showModal = true;
-		selectedPlugin = plugin;
+	// Constants
+	const IP_ADDRESS = '10.1.4.107';
+	const DEFAULT_VERSION = '1.0.0';
+
+	// State initialization
+	const pageState = $page.state as PageState;
+	const { category = 'general', nodeId = '' } = pageState;
+
+	// Reactive state
+	let state = {
+		isOpen: false,
+		showModal: false,
+		selectedPlugin: {} as PluginListItem,
+		pluginServices: [] as PluginListItem[],
+		availablePlugins: [] as PluginListItem[]
 	};
 
-	// Plugin management functions
-	async function fetchMediaHubs() {
-		try {
-			const nodesData = await getNodes($gatewayId);
-			const [firstHub] = nodesData.nodes;
-			processMediaData(firstHub.plugins);
-		} catch (error) {
-			console.error('Failed to fetch media hubs:', error);
-		}
-	}
+	// Utility functions
+	const determineLaunchType = (pluginId: string): LaunchType =>
+		INTER_PLUGINS.has(pluginId) ? 'INTER_PP' : 'INTRA_PP';
 
-	async function unInstallPlugin() {
-		showModal = false;
-		if (!selectedPlugin?.name) return;
+	const findPluginInStore = (pluginId: string): Promise<PluginListItem | null> => {
+		return new Promise((resolve) => {
+			CloudPluginStore.subscribe((store) => {
+				const found = store.core.plugins
+					.flatMap((plugin) => plugin.device_plugins || [])
+					.find((dp) => dp?.id === pluginId);
+				resolve(found || null);
+			})();
+		});
+	};
 
-		if (confirm(`Do you want to uninstall ${selectedPlugin.name}`)) {
-			await fetchMediaHubs();
-			await init();
-			console.log('Uninstalled:', selectedPlugin);
-		}
-	}
+	// Core functions
+	const getUninstalledPlugins = (): PluginListItem[] => {
+		const installedIds = new Set(state.pluginServices.map((s) => s.id));
+		const installingIds = new Set($installingPluigns.map((p) => p.id));
+		let plugins: PluginListItem[] = [];
 
-	function getUninstalledDevicePlugins(): PluginListItem[] {
-		const installedPluginIds = new Set(pluginServices.map((service) => service.id));
-		const installingPluginIds = new Set($installingPluigns.map((plugin) => plugin.id));
-		let cloudDevicePlugins: PluginListItem[] = [];
-
-		CloudPluginStore.subscribe((cloudStore) => {
+		CloudPluginStore.subscribe((store) => {
 			if (category === 'core') {
-				cloudStore.core.plugins.forEach((plugin) => {
-					if (plugin.device_plugins?.length) {
-						cloudDevicePlugins.push(
-							...plugin.device_plugins.map((dp) => ({
-								name: dp.name,
-								id: dp.id,
-								description: dp.description,
-								version: dp.version
-							}))
-						);
-					}
-				});
+				const targetPlugin = store.core.plugins.find(
+					(p) => p.id === pageState.categoryId && p.device_plugins?.length
+				);
+				plugins =
+					targetPlugin?.device_plugins?.map((dp) => ({
+						name: dp.name,
+						id: dp.id,
+						description: dp.description,
+						version: dp.version
+					})) || [];
 			} else {
-				cloudDevicePlugins = cloudStore.general.plugins.map((plugin) => ({
-					name: plugin.name,
-					id: plugin.id,
-					description: plugin.description,
-					version: plugin.version
+				plugins = store.general.plugins.map((p) => ({
+					name: p.name,
+					id: p.id,
+					description: p.description,
+					version: p.version
 				}));
 			}
 		});
 
-		return cloudDevicePlugins.filter(
-			(plugin) => !installedPluginIds.has(plugin.id) && !installingPluginIds.has(plugin.id)
-		);
-	}
+		return plugins.filter((p) => !installedIds.has(p.id) && !installingIds.has(p.id));
+	};
 
-	function determineLaunchType(pluginId: string): 'INTER_PP' | 'INTRA_PP' {
-		return INTER_PLUGINS.has(pluginId) ? 'INTER_PP' : 'INTRA_PP';
-	}
-
-	const handlePluginInstallation = async (event: CustomEvent) => {
-		const selectedPlugin = event.detail;
-
+	// Event handlers
+	const handlePluginInstall = async (event: CustomEvent) => {
 		try {
-			const plugin = await new Promise<PluginListItem | null>((resolve) => {
-				CloudPluginStore.subscribe((cloudStore) => {
-					let found = null;
-					cloudStore.core.plugins.forEach((corePlugin) => {
-						if (corePlugin.device_plugins) {
-							const plugin = corePlugin.device_plugins.find((dp) => dp.id === selectedPlugin.id);
-							if (plugin) found = plugin;
-						}
-					});
-					resolve(found);
-				})();
-			});
+			const plugin = await findPluginInStore(event.detail.id);
+			if (!plugin) return;
 
-			if (plugin) {
-				console.log("nodeId : ",pageState.nodeId)
-				const installData: IPluginInstall = {
-					id: plugin.id,
-					launchType: determineLaunchType(plugin.id),
-					nodeId: pageState.nodeId.nodeId,
-					version: plugin.version || '1.0.0'
-				};
+			const installData: PluginInstallData = {
+				id: plugin.id,
+				launchType: determineLaunchType(plugin.id),
+				nodeId: pageState.nodeId,
+				version: plugin.version || DEFAULT_VERSION
+			};
 
-				$installingPluigns = [...$installingPluigns, { ...plugin, coreType: category }];
-				let resp = await installServicePlugin(IP_ADDRESS, installData);
-				if(resp?.success){
-					await fetchMediaHubs();
-					init()
-				}
-				availablePlugins = getUninstalledDevicePlugins();
+			$installingPluigns = [...$installingPluigns, { ...plugin, coreType: category }];
+			// const response = await installServicePlugin(IP_ADDRESS, installData);
+			const response = await installPluginThroughNats($gatewayId, installData);
+
+			if (response?.success) {
+				await fetchMediaHubs();
+				await initializePlugins();
 			}
+			state.availablePlugins = getUninstalledPlugins();
 		} catch (error) {
 			console.error('Installation failed:', error);
 		}
 	};
 
-	async function init() {
+	const handleUninstall = async () => {
+		const { selectedPlugin } = state;
+		if (!selectedPlugin?.name || !selectedPlugin?.version || !pageState.nodeId) return;
+
+		const shouldUninstall = confirm(`Do you want to uninstall ${selectedPlugin.name}?`);
+		if (!shouldUninstall) return;
+
+		try {
+			const uninstallData: PluginUninstallData = {
+				pluginId: selectedPlugin.id,
+				nodeId: pageState.nodeId,
+				version: selectedPlugin.version
+			};
+
+			// await uninstallPlugin(IP_ADDRESS, uninstallData);
+			await unInstallPluginThroughNats($gatewayId, uninstallData);
+			await fetchMediaHubs();
+			await initializePlugins();
+		} catch (error) {
+			console.error('Uninstallation failed:', error);
+		} finally {
+			state.showModal = false;
+		}
+	};
+
+	// Navigation handlers
+	const goBack = () => history.go(-1);
+	const addPlugin = () => (state.isOpen = true);
+	const showSettings = (plugin: PluginListItem) => {
+		state.showModal = true;
+		state.selectedPlugin = plugin;
+	};
+
+	// Data fetching
+	const fetchMediaHubs = async () => {
+		try {
+			const { nodes } = <any>await getNodes($gatewayId);
+			processMediaData(nodes[0].plugins);
+		} catch (error) {
+			console.error('Failed to fetch media hubs:', error);
+		}
+	};
+
+	const initializePlugins = async () => {
 		if (category === 'core') {
-			pluginServices = $pluginStore.plugins.core.plugins.reduce((acc: PluginListItem[], plugin) => {
-				if (plugin.device_plugins?.length) {
-					return [...acc, ...plugin.device_plugins];
-				}
-				return acc;
-			}, []);
+			state.pluginServices =
+				$pluginStore.plugins.core.plugins.find((p) => p.id === pageState.categoryId)
+					?.device_plugins || [];
 		} else {
-			pluginServices = $pluginStore.plugins.general.plugins;
+			state.pluginServices = $pluginStore.plugins.general.plugins;
 		}
 
-		availablePlugins = getUninstalledDevicePlugins();
-	}
+		state.availablePlugins = getUninstalledPlugins();
+	};
 
-	onMount(init);
+	// Lifecycle and reactivity
+	onMount(initializePlugins);
 
-	// Reactive statement for store changes
 	$: {
-		$installingPluigns;
-		$CloudPluginStore;
-		if (pluginServices.length >= 0) {
-			availablePlugins = getUninstalledDevicePlugins();
+		if (state.pluginServices.length >= 0) {
+			state.availablePlugins = getUninstalledPlugins();
 		}
 	}
 </script>
 
 <div class="theme-page">
-	<Modal bind:isOpen={showModal} title="Plugin Settings" style="height:13vh;">
-		<div class="p-2 uninstall-button" on:click={unInstallPlugin}>
+	<Modal bind:isOpen={state.showModal} title="Plugin Settings" style="height:13vh;">
+		<div class="p-2 uninstall-button" on:click={handleUninstall}>
 			<span class="icon-delete fsipx-24" />
 			Uninstall plugin
 		</div>
 	</Modal>
 
 	<header class="header bottom-shadow">
-		<p class="title-large" style="padding-left: 8px;">
+		<p class="title-large">
 			{category === 'core' ? 'Device Plugins' : 'General Plugins'}
 		</p>
 	</header>
 
 	<main class="content-container">
 		<div class="content">
-			{#if pluginServices.length > 0}
-				{#each pluginServices as service (service.id)}
+			{#if state.pluginServices.length > 0}
+				{#each state.pluginServices as service (service.id)}
 					<PluginCard
 						name={service.name}
 						desc={service.description}
 						on:longPressed={() => showSettings(service)}
 					/>
 				{/each}
-			<!-- {:else}
-				<p class="no-plugins">
-					{category === 'core' ? 'No device plugins available' : 'No general plugins available'}
-				</p> -->
 			{/if}
 
 			{#if $installingPluigns.length > 0}
@@ -229,10 +249,10 @@
 	</footer>
 
 	<AvailablePlugins
-		bind:isOpen
+		bind:isOpen={state.isOpen}
 		title={category === 'core' ? 'Device Plugins' : 'General Plugins'}
-		list={availablePlugins}
-		on:PluginSelection={handlePluginInstallation}
+		list={state.availablePlugins}
+		on:PluginSelection={handlePluginInstall}
 	/>
 </div>
 
@@ -251,51 +271,44 @@
 
 	.header {
 		width: 100%;
-		padding: 16px 8px;
-		flex-shrink: 0; /* Prevent header from shrinking */
+		padding: 1rem 0.5rem;
+		flex-shrink: 0;
 	}
 
 	.content-container {
 		flex: 1;
-		overflow: hidden; /* Hide overflow */
+		overflow: hidden;
 		position: relative;
-		padding-bottom: 80px; /* Add space for footer */
+		padding-bottom: 5rem;
 	}
 
 	.content {
 		height: 100%;
-		overflow-y: auto; /* Enable vertical scrolling */
-		padding: 16px 8px;
+		overflow-y: auto;
+		padding: 1rem 0.5rem;
 		display: flex;
 		flex-direction: column;
-		gap: 16px;
+		gap: 1rem;
 	}
 
 	.footer {
 		position: absolute;
-		bottom: 16px;
+		bottom: 1rem;
 		left: 0;
 		right: 0;
 		display: flex;
 		justify-content: space-between;
-		padding: 16px;
-
-		z-index: 1; /* Ensure footer stays above content */
+		padding: 1rem;
+		z-index: 1;
 	}
 
 	.uninstall-button {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 0.5rem;
 		cursor: pointer;
 	}
 
-	.no-plugins {
-		text-align: center;
-		padding: 2rem;
-	}
-
-	/* Optional: Add scrollbar styling */
 	.content::-webkit-scrollbar {
 		width: 6px;
 	}

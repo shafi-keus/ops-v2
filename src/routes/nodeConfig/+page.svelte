@@ -46,12 +46,22 @@
 	let nodeId: string = '';
 	let pluginCategories: PluginCategory[] = [];
 	let availablePluginCategories: CloudPlugin[] = [];
+	const pageState = $page.state as PageState;
 
 	// Navigation handlers
 	const goBack = () => history.go(-1);
 	const addCategory = () => (isOpen = true);
-	const navigateToServicePlugins = (category: string) =>
-		goto('./servicePlugins', { state: { category, nodeId } });
+
+	const navigateToServicePlugins = (category: string, categoryId?: string) => {
+		console.log('category: ', category, categoryId);
+		goto('./servicePlugins', {
+			state: {
+				category,
+				nodeId: pageState.nodeId,
+				...(categoryId && { categoryId })
+			}
+		});
+	};
 
 	// Plugin installation handler
 	const handlePluginSelection = async (event: CustomEvent) => {
@@ -63,8 +73,6 @@
 				console.error('Plugin not found in cloud store');
 				return;
 			}
-
-			const pageState = $page.state as PageState;
 
 			const installData: any = {
 				id: fullPlugin.id,
@@ -130,7 +138,7 @@
 	// Plugin management functions
 	async function fetchMediaHubs() {
 		try {
-			const nodesData = await getNodes($gatewayId);
+			const nodesData:any = await getNodes($gatewayId);
 			const [firstHub] = nodesData.nodes;
 			processMediaData(firstHub.plugins);
 		} catch (error) {
@@ -140,7 +148,7 @@
 
 	const init = async () => {
 		const store = $pluginStore.plugins;
-		nodeId = <string>$page.state;
+		nodeId = pageState.nodeId;
 		pluginCategories = Object.entries(store)
 			.filter(([_, data]) => data?.plugins?.length > 0)
 			.map(([type, data]) => ({
@@ -151,20 +159,16 @@
 			}));
 	};
 
-	// Lifecycle and reactivity
+	
 	onMount(() => {
 		init();
-		// Single subscription to handle both store changes
 		const unsubscribe = CloudPluginStore.subscribe((cloudStore) => {
-			// if (pluginCategories.length > 0) {
 			availablePluginCategories = getUninstalledCorePlugins(pluginCategories, cloudStore);
-			// }
 		});
 
 		return unsubscribe;
 	});
 
-	// Reactive statement for store changes
 	$: if (pluginCategories.length > 0) {
 		availablePluginCategories = getUninstalledCorePlugins(pluginCategories, $CloudPluginStore);
 	}
@@ -182,7 +186,7 @@
 					<PluginCard
 						name={plugin.name}
 						desc={plugin.description}
-						on:click={() => navigateToServicePlugins(category.type)}
+						on:click={() => navigateToServicePlugins(category.type, plugin.id)}
 					/>
 				{/each}
 			{:else}

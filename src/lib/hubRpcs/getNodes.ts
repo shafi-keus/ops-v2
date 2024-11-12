@@ -5,10 +5,10 @@ interface CallerResponse {
     data?: {
         success: boolean;
         actionResponseData?: {
-            nodesInfo?: any;
+            nodesInfo?: unknown;
         };
     };
-    error?: any;
+    error?: unknown;
 }
 
 export const getNodes = async (gatewayId: string) => {

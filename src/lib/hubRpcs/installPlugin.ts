@@ -14,15 +14,17 @@ interface CallerResponse {
     error?: unknown;
 }
 
+type LaunchType = 'INTER_PP' | 'INTRA_PP';
+
 
 interface ActionData {
     nodeId: string;
-    pluginId: string;
+    launchType: LaunchType;
+    id: string;
     version: string;
 }
 
-
-export const unInstallPluginThroughNats = async (gatewayId: string, data: ActionData) => {
+export const installPluginThroughNats = async (gatewayId: string, data: ActionData) => {
     try {
 
         if (!gatewayId) {
@@ -31,7 +33,7 @@ export const unInstallPluginThroughNats = async (gatewayId: string, data: Action
         const request = {
             serviceName: 'site_manager',
             versionNo: 'v1',
-            actionName: 'UninstallPlugin',
+            actionName: 'InstallPlugin',
             actionData: data,
             timeout: 10000000,
             retries: 1
@@ -42,16 +44,16 @@ export const unInstallPluginThroughNats = async (gatewayId: string, data: Action
             request
         );
 
-        console.log(response);
-
+        console.log(response)
         installingPluigns.update(plugins =>
-            plugins.filter(plugin => plugin.id !== data.pluginId)
+            plugins.filter(plugin => plugin.id !== data.id)
         );
 
-        if (!response || !response?.data?.success) {
+        if (!response || !response.data?.success) {
+
             return {
                 success: false,
-                error: 'unknown error'
+                error: 'unknow error'
             }
         }
 
@@ -59,9 +61,9 @@ export const unInstallPluginThroughNats = async (gatewayId: string, data: Action
 
     } catch (error) {
         installingPluigns.update(plugins =>
-            plugins.filter(plugin => plugin.id !== data.pluginId)
+            plugins.filter(plugin => plugin.id !== data.id)
         );
-        console.error("Plugin uninstallation failed", get(installingPluigns));
+        console.error("Plugin installation failed", get(installingPluigns))
 
         return {
             success: false,

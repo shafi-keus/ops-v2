@@ -30,7 +30,7 @@ interface PluginsResponse {
 
 export default async function (): Promise<Plugin[]> {
     try {
-        const pluginsData: PluginsResponse = await axios.get(`http://localhost:3000/keus/v1/Plugins/getAllPlugins`, { timeout: 10000 });
+        const pluginsData: PluginsResponse = await axios.get(`http://100.120.83.56:3000/keus/v1/Plugins/getAllPlugins`, { timeout: 10000 });
         console.log(pluginsData)
         if (pluginsData?.data?.success)
             return pluginsData?.data?.data;

@@ -132,7 +132,7 @@
 		try {
 			searching = true;
 			let resp = await registerNode(manualIp, $gatewayDetailInfo);
-			console.log("resp-------->",resp)
+			console.log('resp-------->', resp);
 			await delay(DELAY_TIME);
 			await fetchMediaHubs();
 		} catch (error) {
@@ -171,6 +171,14 @@
 		$gateways = [];
 		$pluginStore = {} as PluginOutput;
 		goto('./');
+	}
+
+	$: {
+		if (manualIp) {
+			active = true;
+		} else {
+			active = false;
+		}
 	}
 </script>
 
@@ -352,5 +360,13 @@
 		padding: 8px;
 	}
 
-	/* Add any additional styles you need */
+	.proceed {
+		color: grey;
+		font-weight: 550;
+		/* margin: 16px; */
+		/* margin-bottom: 32px; */
+	}
+	.active {
+		color: #185eaf;
+	}
 </style>
