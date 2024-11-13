@@ -42,8 +42,6 @@ export const unInstallPluginThroughNats = async (gatewayId: string, data: Action
             request
         );
 
-        console.log(response);
-
         installingPluigns.update(plugins =>
             plugins.filter(plugin => plugin.id !== data.pluginId)
         );
@@ -55,7 +53,7 @@ export const unInstallPluginThroughNats = async (gatewayId: string, data: Action
             }
         }
 
-        return response.data;
+        return response.data?.actionResponseData;
 
     } catch (error) {
         installingPluigns.update(plugins =>

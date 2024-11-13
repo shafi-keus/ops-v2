@@ -6,9 +6,9 @@
 	export let name = '';
 	export let desc = '';
 	const dispatch = createEventDispatcher();
-	let params = { duration: 300 };
 
 	export let installing = false;
+	export let uninstalling = false;
 
 	const showModal = async () => {
 		console.log('pressed');
@@ -16,14 +16,19 @@
 	};
 </script>
 
-<Card on:click style={installing ? 'opacity: .5;' : ''} on:longpress={showModal}>
+<Card
+	on:click
+	style={installing || uninstalling ? 'opacity: .5;' : ''}
+	on:longpress={showModal}
+	longpressDuration={1000}
+>
 	<p class="label-large">{name}</p>
-	{#if desc}
-		<p class="label-medium" style="color : gray">{truncateText(desc,40)}</p>
+	{#if desc && !uninstalling}
+		<p class="label-medium" style="color : gray">{truncateText(desc, 40)}</p>
 	{/if}
-	{#if installing}
+	{#if installing || uninstalling}
 		<div style="display: flex;align-items: center;">
-			<div class="label-medium">installing plugin</div>
+			<div class="label-medium">{installing ? 'Installing' : 'Uninstalling'} plugin</div>
 			<div><Loader scale={0.5} color="text-secondary" /></div>
 		</div>
 	{/if}

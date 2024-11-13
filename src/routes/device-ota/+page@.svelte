@@ -6,7 +6,6 @@
 	import { App } from '@capacitor/app';
 	import { range } from '$lib/components/range.js';
 	import Button from '$lib/components/Button.svelte';
-	import { Toast } from '@capacitor/toast';
 	import {
 		otaStore,
 		otaProgressStore,
@@ -14,19 +13,9 @@
 		channel as ch
 	} from '$lib/stores/index';
 	import FirmwareVersions from './firmwareVersions.svelte';
-	// import { BleController } from "$lib/stores";
-	// import type {
-	//   BleDevice,
-	//   ScanResult,
-	// } from "@capacitor-community/bluetooth-le";
 	import Modal from '$lib/components/modal.svelte';
 	import { onDestroy, onMount } from 'svelte';
-	import { Buffer } from 'buffer';
-	import { connect } from 'nats.ws';
 	import PopUp from '$lib/components/PopUp.svelte';
-	import getOtaVersionsList from '$lib/apis/getOtaVersionsList';
-	import downloadOtaFile from '$lib/apis/downloadOtaFile';
-	import fetchfile from '$lib/apis/fetchfile';
 	import { delay } from '$lib/stores';
 	import type { scandata } from '$lib/stores';
 	import type { PluginListenerHandle } from '@capacitor/core';

@@ -1,8 +1,10 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.keus.bleApp',
-  appName: 'Ops V2',
+  // appId: 'com.keus.bleApp',
+  appId: 'com.serviceapp.app',
+  // appName: 'Ops V2',
+  appName: 'Keus ',
   webDir: 'build',
   server: {
     androidScheme: 'http'

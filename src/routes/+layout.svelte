@@ -440,6 +440,7 @@
 			// console.log('category map : ' + JSON.stringify(Object.keys($deviceCategoryMap)));
 			// fetch the plugin store data
 			let storeData = await getAllPlugins();
+			console.log("store data : ",storeData)
 			transformCloudPlugins(storeData);
 			console.log("Available Plugins from store : ",$CloudPluginStore)
 

@@ -28,10 +28,13 @@ interface PluginsResponse {
 
 }
 
+const addrs = 'http://10.1.4.160:5678/api/v1/Plugins/getAllPlugins'
+// const addrs = 'http://localhost:3000/keus/v1/Plugins/getAllPlugins'
+
 export default async function (): Promise<Plugin[]> {
     try {
-        const pluginsData: PluginsResponse = await axios.get(`http://100.120.83.56:3000/keus/v1/Plugins/getAllPlugins`, { timeout: 10000 });
-        console.log(pluginsData)
+        const pluginsData: PluginsResponse = await axios.get(`${addrs}`, { timeout: 10000 });
+        console.log("caller data : ",pluginsData?.data?.data)
         if (pluginsData?.data?.success)
             return pluginsData?.data?.data;
         else return []

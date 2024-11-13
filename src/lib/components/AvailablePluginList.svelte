@@ -23,12 +23,12 @@
     };
 </script>
 
-<Modal {title} bind:isOpen>
-    <div class="px-2 item">
+<Modal {title} bind:isOpen style="max-height: 60vh;">
+    <div class="p-2 fsipx-14 item">
         {#each list as plugin, i}
             <p
                 class:item={i < list.length - 1}
-                style="padding: 8px;"
+                style="padding: 14px;"
                 on:click={() => installPlugin(plugin)}
             >
                 {plugin.name}
@@ -51,6 +51,6 @@
         padding: 0;
     }
     .item {
-        border-bottom: 2px solid rgb(196, 198, 207);
+        border-bottom: 1px solid rgb(196, 198, 207);
     }
 </style>

@@ -75,10 +75,11 @@
 	async function fetchMediaHubs() {
 		try {
 			const nodesData = await getNodes($gatewayId);
-			mediaHubs = [...nodesData.nodes];
+			
+			mediaHubs = [...nodesData?.nodes];
 			processMediaData(mediaHubs[0].plugins);
 		} catch (error) {
-			console.error('Failed to fetch media hubs:', error);
+			console.log('Failed to fetch media hubs:', error);
 		}
 	}
 
@@ -129,6 +130,8 @@
 
 	async function registerNewNode() {
 		ipmanual = false;
+		const shouldProceed = confirm(`Do you want to register media hub with IP ${manualIp}?`);
+		if (!shouldProceed) return;
 		try {
 			searching = true;
 			let resp = await registerNode(manualIp, $gatewayDetailInfo);

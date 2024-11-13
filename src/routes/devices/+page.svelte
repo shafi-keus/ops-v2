@@ -198,6 +198,7 @@
 			threshold: 0.0
 		});
 		searchResult = fuse.search(searchText);
+		console.log('search result : ', JSON.stringify(searchResult));
 		if (searchResult?.length > 0) {
 			let fuseResults = Object?.values(searchResult);
 			for (const device in fuseResults) {
@@ -231,16 +232,12 @@
 	}
 	$: if (!$otaFlag && !$scanningFlag && Object.keys($connectedDevicesStore)?.length == 0) {
 		(async () => {
-			try {
-				await BLE.startScan();
-				Toast.show({
-					text: 'Scanning nearby devices',
-					duration: 'short',
-					position: 'top'
-				});
-			} catch (error) {
-				console.error('failed to start scan');
-			}
+			await BLE.startScan();
+			Toast.show({
+				text: 'Scanning nearby devices',
+				duration: 'short',
+				position: 'top'
+			});
 		})();
 	}
 	$: if (filters.length > 0 || searchText.length > 0) deviceSearch = true;

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { page } from '$app/stores';
+	import { writable } from 'svelte/store';
 	import Button from '$lib/components/Button.svelte';
 	import {
 		installingPluigns,
@@ -12,16 +13,22 @@
 	import { onMount } from 'svelte';
 	import AvailableCategories from '$lib/components/AvailablePluginList.svelte';
 	import PluginCard from '$lib/components/PluginCard.svelte';
-	import { CloudPluginStore } from '$lib/utils';
+	import { CloudPluginStore, INTER_PLUGINS } from '$lib/utils';
 	import installServicePlugin from '$lib/apis/installPlugin';
 	import { getNodes } from '$lib/hubRpcs/getNodes';
 	import { gatewayId } from '$lib/stores';
+	import { installPluginThroughNats } from '$lib/hubRpcs/installPlugin';
+	import { unInstallPluginThroughNats } from '$lib/hubRpcs/unInstallPlugin';
+	import Modal from '$lib/components/modal.svelte';
+	import { Toast } from '@capacitor/toast';
 
-	// Constants
+	// Add uninstalling plugins store
+	const uninstallingPlugins = writable<string[]>([]);
+
 	const IP_ADDRESS = '10.1.4.107';
 	const LAUNCH_TYPE = 'INTRA_PP';
+	const DEFAULT_VERSION = '1.0.0';
 
-	// Interfaces
 	interface PluginCategory {
 		type: string;
 		name: string;
@@ -41,19 +48,60 @@
 		version?: string;
 	}
 
-	// State
 	let isOpen = false;
+	let showModal = false;
+	let selectedPlugin: any = {};
 	let nodeId: string = '';
 	let pluginCategories: PluginCategory[] = [];
 	let availablePluginCategories: CloudPlugin[] = [];
 	const pageState = $page.state as PageState;
 
-	// Navigation handlers
+	type LaunchType = 'INTER_PP' | 'INTRA_PP';
+
 	const goBack = () => history.go(-1);
 	const addCategory = () => (isOpen = true);
 
+	const showSettings = (plugin: any) => {
+		showModal = true;
+		selectedPlugin = plugin;
+	};
+
+	const handleUninstall = async () => {
+		showModal = false;
+		if (!selectedPlugin?.name || !selectedPlugin?.version || !pageState.nodeId) return;
+
+		const shouldUninstall = confirm(`Do you want to uninstall ${selectedPlugin.name}?`);
+		if (!shouldUninstall) return;
+
+		try {
+			uninstallingPlugins.update((plugins) => [...plugins, selectedPlugin.id]);
+
+			const uninstallData = {
+				pluginId: selectedPlugin.id,
+				nodeId: pageState.nodeId,
+				version: selectedPlugin.version || DEFAULT_VERSION
+			};
+
+			let resp = await unInstallPluginThroughNats($gatewayId, uninstallData);
+			if (resp?.success) {
+				await Toast.show({
+					text: `${selectedPlugin.name} uninstalled successfully`,
+					duration: 'short',
+					position: 'top'
+				});
+			}
+
+			await fetchMediaHubs();
+			await init();
+		} catch (error) {
+			console.error('Uninstallation failed:', error);
+		} finally {
+			uninstallingPlugins.update((plugins) => plugins.filter((id) => id !== selectedPlugin.id));
+			showModal = false;
+		}
+	};
+
 	const navigateToServicePlugins = (category: string, categoryId?: string) => {
-		console.log('category: ', category, categoryId);
 		goto('./servicePlugins', {
 			state: {
 				category,
@@ -62,8 +110,9 @@
 			}
 		});
 	};
+	const determineLaunchType = (pluginId: string): LaunchType =>
+		INTER_PLUGINS.has(pluginId) ? 'INTER_PP' : 'INTRA_PP';
 
-	// Plugin installation handler
 	const handlePluginSelection = async (event: CustomEvent) => {
 		const selectedPlugin = event.detail;
 
@@ -76,28 +125,22 @@
 
 			const installData: any = {
 				id: fullPlugin.id,
-				launchType: LAUNCH_TYPE,
+				launchType: determineLaunchType(fullPlugin.id),
 				nodeId: pageState.nodeId,
-				version: fullPlugin.version || '1.0.0'
+				version: fullPlugin.version || DEFAULT_VERSION
 			};
 
 			$installingPluigns = [...$installingPluigns, fullPlugin];
-			const response = await installServicePlugin(IP_ADDRESS, installData);
+			const response = await installPluginThroughNats($gatewayId, installData);
 
 			await fetchMediaHubs();
 			init();
-
-			console.log(
-				response.success
-					? 'Plugin installed successfully'
-					: `Failed to install plugin: ${response.error}`
-			);
 		} catch (error) {
 			console.error('Error during plugin installation:', error);
+			$installingPluigns = $installingPluigns.filter((p) => p.id !== selectedPlugin.id);
 		}
 	};
 
-	// Helper functions
 	function getFullPluginDetails(pluginId: string): Promise<CloudPlugin | null> {
 		return new Promise((resolve) => {
 			CloudPluginStore.subscribe((cloudStore) => {
@@ -107,7 +150,7 @@
 		});
 	}
 
-	function getUninstalledCorePlugins(
+	function getAvailablePlugins(
 		installedPlugins: PluginCategory[],
 		cloudPlugins: typeof $CloudPluginStore
 	): CloudPlugin[] {
@@ -135,10 +178,9 @@
 			}));
 	}
 
-	// Plugin management functions
 	async function fetchMediaHubs() {
 		try {
-			const nodesData:any = await getNodes($gatewayId);
+			const nodesData: any = await getNodes($gatewayId);
 			const [firstHub] = nodesData.nodes;
 			processMediaData(firstHub.plugins);
 		} catch (error) {
@@ -157,24 +199,39 @@
 				description: data?.description || '',
 				plugins: data?.plugins
 			}));
+
+		if (!pluginCategories.some((category) => category.type === 'general')) {
+			pluginCategories.push({
+				type: 'general',
+				name: 'General Plugins',
+				description: 'Plugins for general utilities',
+				plugins: []
+			});
+		}
 	};
 
-	
 	onMount(() => {
 		init();
 		const unsubscribe = CloudPluginStore.subscribe((cloudStore) => {
-			availablePluginCategories = getUninstalledCorePlugins(pluginCategories, cloudStore);
+			availablePluginCategories = getAvailablePlugins(pluginCategories, cloudStore);
 		});
 
 		return unsubscribe;
 	});
 
 	$: if (pluginCategories.length > 0) {
-		availablePluginCategories = getUninstalledCorePlugins(pluginCategories, $CloudPluginStore);
+		availablePluginCategories = getAvailablePlugins(pluginCategories, $CloudPluginStore);
 	}
 </script>
 
 <div class="theme-page">
+	<Modal bind:isOpen={showModal} title={selectedPlugin.name} style="height:15vh;">
+		<div class="p-2 uninstall-button" on:click={handleUninstall}>
+			<span class="icon-delete fsipx-24" />
+			Uninstall plugin
+		</div>
+	</Modal>
+
 	<header class="header bottom-shadow">
 		<p class="title-large" style="padding-left: 8px;">Plugin Categories</p>
 	</header>
@@ -186,7 +243,9 @@
 					<PluginCard
 						name={plugin.name}
 						desc={plugin.description}
+						uninstalling={$uninstallingPlugins.includes(plugin.id)}
 						on:click={() => navigateToServicePlugins(category.type, plugin.id)}
+						on:longPressed={() => showSettings(plugin)}
 					/>
 				{/each}
 			{:else}
@@ -256,5 +315,12 @@
 		display: flex;
 		justify-content: space-between;
 		padding: 16px;
+	}
+
+	.uninstall-button {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		cursor: pointer;
 	}
 </style>

@@ -134,6 +134,7 @@ interface CloudImageConfig {
 
 interface CloudPlugin {
     _id: string;
+    pluginId : string;
     description: string;
     displayName: string;
     imageConfig: CloudImageConfig;
@@ -189,7 +190,7 @@ export const CloudPluginStore = writable<OrganizedPlugins>({
     }
 });
 
-export function transformCloudPlugins(cloudPlugins: CloudPlugin[]): void {
+export function transformCloudPlugins(cloudPlugins: CloudPlugin[]): void { 
     const organized: OrganizedPlugins = {
         core: {
             name: "Plugin Core",
@@ -216,7 +217,7 @@ export function transformCloudPlugins(cloudPlugins: CloudPlugin[]): void {
                 type: corePlugin.pluginType,
                 description: corePlugin.description,
                 device_plugins: [],
-                id : corePlugin._id
+                id : corePlugin.pluginId
             });
         });
 
@@ -229,7 +230,7 @@ export function transformCloudPlugins(cloudPlugins: CloudPlugin[]): void {
                 const corePlugin = corePluginsMap.get(serviceCategory);
                 if (corePlugin) {
                     corePlugin.device_plugins.push({
-                        id: devicePlugin.name,
+                        id: devicePlugin.pluginId,
                         name: devicePlugin.displayName,
                         version: devicePlugin.version,
                         type: devicePlugin.pluginType,
@@ -258,7 +259,7 @@ export function transformCloudPlugins(cloudPlugins: CloudPlugin[]): void {
                 type: generalPlugin.pluginType,
                 description: generalPlugin.description,
                 device_plugins: [],
-                id : generalPlugin._id
+                id : generalPlugin.pluginId
             });
         });
 
@@ -269,8 +270,8 @@ export function transformCloudPlugins(cloudPlugins: CloudPlugin[]): void {
 
 
 export const INTER_PLUGINS = new Set([
-   '1.0.0.kiotp.plugins.core.cameras.keus',
-   '1.0.0.kiotp.plugins.core.puppeteer',
+   'kiotp.plugins.core.cameras.keus',
+   'kiotp.plugins.core.puppeteer',
    'kiotp.plugins.core.deepmedia.tv.appletv',
    'kiotp.plugins.core.deepmedia.speaker.sonos'
 ]);

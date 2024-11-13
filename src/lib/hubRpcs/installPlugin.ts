@@ -27,6 +27,8 @@ interface ActionData {
 export const installPluginThroughNats = async (gatewayId: string, data: ActionData) => {
     try {
 
+        console.log("Action data : ",data)
+
         if (!gatewayId) {
             throw new Error('Gateway ID is required');
         }
@@ -35,7 +37,7 @@ export const installPluginThroughNats = async (gatewayId: string, data: ActionDa
             versionNo: 'v1',
             actionName: 'InstallPlugin',
             actionData: data,
-            timeout: 10000000,
+            timeout: 1000 * 60 * 10,
             retries: 1
         };
 
@@ -44,7 +46,7 @@ export const installPluginThroughNats = async (gatewayId: string, data: ActionDa
             request
         );
 
-        console.log(response)
+        console.log("install plugin response : ",response)
         installingPluigns.update(plugins =>
             plugins.filter(plugin => plugin.id !== data.id)
         );

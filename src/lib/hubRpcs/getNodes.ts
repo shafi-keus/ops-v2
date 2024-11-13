@@ -61,8 +61,8 @@ export const getNodes = async (gatewayId: string) => {
         return callerRes.data.actionResponseData.nodesInfo;
 
     } catch (error) {
-        console.error('GetNodes error:', error);
-        throw new Error(`Failed to get nodes: error`);
+        console.log('GetNodes error:', error);
+        // throw new Error(`Failed to get nodes: error`);
     }
 };
 
