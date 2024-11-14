@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { version } from '$app/environment';
+
 	import {
 		bleInitialize,
 		connectedDevices,
@@ -32,6 +34,8 @@
 	import fetchGlobals from '$lib/apis/fetchGlobals';
 	import getAllPlugins from '$lib/apis/getAllPlugins';
 	import { CloudPluginStore, transformCloudPlugins } from '$lib/utils';
+	import downloadLatestApk from '$lib/apis/downloadLatestApk';
+	import fetchLatestApk from '$lib/apis/fetchLatestApk';
 	type EventData = {
 		type: number;
 		data: any;
@@ -94,20 +98,20 @@
 	}
 
 	async function startScan(isStarted: boolean) {
-		console.log('start scan response : ', JSON.stringify(isStarted));
+		// console.log('start scan response : ', JSON.stringify(isStarted));
 		if (isStarted) $scanningFlag = true;
 		else await BLE.startScan();
 	}
 
 	function stopScan(isStopped: boolean) {
-		console.log('stop scan response : ', JSON.stringify(isStopped));
+		// console.log('stop scan response : ', JSON.stringify(isStopped));
 		if (isStopped) {
 			$scanningFlag = false;
 		}
 	}
 
 	async function getDevices(data: scanResult) {
-		console.log('event data of getDevices : ', JSON.stringify(data));
+		// console.log('event data of getDevices : ', JSON.stringify(data));
 		let devices = data?.devices;
 		if (devices && devices.length > 0) $scanningData = devices;
 
@@ -225,18 +229,18 @@
 			if ($connectedDevicesStore[Data?.deviceId]) delete $connectedDevicesStore[Data.deviceId];
 			if ($otaProgressStore[Data?.deviceId]) delete $otaProgressStore[Data.deviceId];
 			if ($extendedScanData[Data?.deviceId]) delete $extendedScanData[Data?.deviceId];
-			console.log('device is disconnected ');
+			// console.log('device is disconnected ');
 			await BLE.startScan();
 		}
 	}
 
 	function write(Data: any) {
-		console.log('WRITE RESPONSE : ', JSON.stringify(Data));
+		// console.log('WRITE RESPONSE : ', JSON.stringify(Data));
 	}
 
 	function parseIEEEAddress(uint8ArrayData: Uint8Array) {
 		if (uint8ArrayData.length !== 8) {
-			console.log('Invalid IEEE address data. It should be 8 bytes (64 bits) long.');
+			// console.log('Invalid IEEE address data. It should be 8 bytes (64 bits) long.');
 			return;
 		}
 
@@ -253,7 +257,7 @@
 	}
 
 	function read(Data: Characteristic) {
-		console.log('READ RESPONSE : ', JSON.stringify(Data));
+		// console.log('READ RESPONSE : ', JSON.stringify(Data));
 		if (Data.success && Data.deviceId && Data.characteristic) {
 			if ($connectedDevicesStore[Data?.deviceId]) {
 				switch (Data.characteristic) {
@@ -275,11 +279,11 @@
 	}
 
 	function advtResp(Data: any) {
-		console.log('advt resp : ', JSON.stringify(Data));
+		// console.log('advt resp : ', JSON.stringify(Data));
 	}
 
 	function notify(Data: any) {
-		console.log('NOTIFY RESPONSE : ', JSON.stringify(Data));
+		// console.log('NOTIFY RESPONSE : ', JSON.stringify(Data));
 	}
 
 	function setPriority(Data: any) {
@@ -291,7 +295,7 @@
 	}
 
 	function bleNotEnable(Data: any) {
-		console.log('ble not enabled', JSON.stringify(Data));
+		// console.log('ble not enabled', JSON.stringify(Data));
 	}
 
 	function bleNotInitialized(Data: any) {
@@ -299,7 +303,7 @@
 	}
 
 	function noScanningData(Data: any) {
-		console.log('no scanning data', JSON.stringify(Data));
+		// console.log('no scanning data', JSON.stringify(Data));
 	}
 
 	function addressNotFound(Data: any) {
@@ -307,7 +311,7 @@
 	}
 
 	function charactersticNotFound(Data: any) {
-		console.log('characterstic not found', JSON.stringify(Data));
+		// console.log('characterstic not found', JSON.stringify(Data));
 	}
 
 	async function processRespEvent(eventData: EventData) {
@@ -440,10 +444,8 @@
 			// console.log('category map : ' + JSON.stringify(Object.keys($deviceCategoryMap)));
 			// fetch the plugin store data
 			let storeData = await getAllPlugins();
-			console.log("store data : ",storeData)
 			transformCloudPlugins(storeData);
-			console.log("Available Plugins from store : ",$CloudPluginStore)
-
+			console.log('Available Plugins to download : ', $CloudPluginStore);
 		} catch (error) {
 			console.error('error while fetching the deviceMap for app');
 		}
@@ -454,6 +456,59 @@
 		await BLE.initializeBle();
 	}
 
+	async function triggerApkDownload(version: string) {
+		try {
+			let resp = await downloadLatestApk({
+				token: token,
+				version: version,
+				branch: 'ble_ota_tool'
+			});
+			if (resp?.data?.success) {
+				console.log('download resp : ', JSON.stringify(resp));
+				const apkUrl = resp?.data?.data;
+				const downloadLink = document.createElement('a');
+				downloadLink.href = apkUrl;
+				downloadLink.download = `Ops app-${version}`;
+				document.body.appendChild(downloadLink);
+				downloadLink.click();
+				document.body.removeChild(downloadLink);
+			}
+		} catch (error) {
+			console.error('Error downloading APK:', error);
+		}
+	}
+
+	async function checkUpdate() {
+		let fetchedApk = await fetchLatestApk({
+			token: token,
+			branch: 'ble_ota_tool'
+		});
+		let new_version = null;
+		if (fetchedApk.data.success) {
+			new_version = fetchedApk?.data?.data[0]['Key'].split('/')[2];
+			new_version = new_version.replace('.apk', '');
+			console.log('current_version and latest_version : ', version, new_version);
+			if (new_version && compareVersions(version, new_version) < 0) {
+				const userConfirmed = confirm(
+					`Do you want to download the latest version (${new_version})?`
+				);
+				if (userConfirmed) await triggerApkDownload(new_version);
+				else return;
+			}
+		}
+	}
+	function compareVersions(versionA: string, versionB: string) {
+		const segmentsA = versionA.split('.').map(Number);
+		const segmentsB = versionB.split('.').map(Number);
+
+		for (let i = 0; i < Math.max(segmentsA.length, segmentsB.length); i++) {
+			if ((segmentsA[i] || 0) < (segmentsB[i] || 0)) return -1;
+			if ((segmentsA[i] || 0) > (segmentsB[i] || 0)) return 1;
+		}
+		console.log('already in latest version');
+		return 0;
+	}
+
 	onMount(async () => {
 		try {
 			let metaData = {
@@ -461,10 +516,10 @@
 				deviceType: 'android'
 			};
 			nc.setMetaData(JSON.stringify(metaData));
-			let conRes = await nc.connect();
-			console.log('NATS CONNECTION- ', conRes);
+			await nc.connect();
 			natsTypeConversionUtils.registerTypes();
 			try {
+				await checkUpdate();
 				await BLE.addListener('pluginEvent', (eventData) => processRespEvent(eventData?.data));
 			} catch (error) {
 				console.warn('check the platform');
@@ -472,7 +527,7 @@
 			await initApp();
 			await initRequest();
 		} catch (error) {
-			console.log('found error while fetching event data...', error);
+			console.warn('found error while fetching event data');
 		}
 	});
 </script>

@@ -91,7 +91,6 @@
 				for (let i = 0; i < checked.length; i++) {
 					if (checked[i]) devices.push(devicetypes[i]);
 				}
-				console.log('applied devices are : ', devices);
 				dispatch('applied', devices);
 			}}>Apply</Button
 		>

@@ -2,7 +2,6 @@
     export let loading = true;
     export let height = 30;
     export let className = ""
-    export let m_height;
     export {className as class}
 </script>
 

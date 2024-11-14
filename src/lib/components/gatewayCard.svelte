@@ -55,7 +55,6 @@
 		if (!resp?.data?.data) return;
 		else onlineStatus = resp.data.data;
 	};
-	// $:console.log("channel of the gateway is : " + channel);
 	// returns the latest available version of main branch.....
 	// const updateVersions = async () => {
 	//   let verRes = await getDeploymentVersions({
@@ -87,92 +86,86 @@
 	//   return false;
 	// };
 	onMount(async () => {
-		// alert(configuration);
 		if (!configuration) {
 			pingGateway();
-			// await updateVersions();
 		}
 	});
 </script>
 
 <div class="theme-page">
-	<!-- configuration -->
-	{#if gatewayupdate}
-		<GatewayUpdate bind:gatewayupdate />
-	{:else}
-		<div
-			class="card theme-page shadow-normal"
-			style="border:none;min-height: {currVersion ? '28' : 0}vh;"
-		>
-			<!-- mini gateway popup -->
-			<PopUp bind:isOpen={mini} style="min-height:16vh;padding:14px;">
-				<div class="p-2">
-					<div style="font-weight:600;margin-bottom:1%;font-size:large;">Convert to mini</div>
-					<span style="font-weight:400;"> Main gateway will be converted to mini gateway </span>
-					<div class="right mt-4">
-						<Button
-							outlined
-							style="width:auto;height:40px;margin-right:10px;"
-							size="md"
-							on:click={() => {
-								mini = false;
-							}}>Cancel</Button
-						>
-						<Button
-							size="md"
-							style="width:auto;height:40px;"
-							on:click={async () => {
-								gatewayupdate = 'Converting to mini';
-								let res = await GatewayCommunicator.convertGatewayMode({
-									mode: 1
-								});
-								if (res?.success) {
-									alert('Gateway is converted to mini');
-									configuration = 'mini';
-								}
-								mini = false;
-							}}>Convert</Button
-						>
-					</div>
+	<div
+		class="card theme-page shadow-normal"
+		style="border:none;min-height: {currVersion ? '28' : 0}vh;"
+	>
+		<!-- mini gateway popup -->
+		<PopUp bind:isOpen={mini} style="min-height:16vh;padding:14px;">
+			<div class="p-2">
+				<div style="font-weight:600;margin-bottom:1%;font-size:large;">Convert to mini</div>
+				<span style="font-weight:400;"> Main gateway will be converted to mini gateway </span>
+				<div class="right mt-4">
+					<Button
+						outlined
+						style="width:auto;height:40px;margin-right:10px;"
+						size="md"
+						on:click={() => {
+							mini = false;
+						}}>Cancel</Button
+					>
+					<Button
+						size="md"
+						style="width:auto;height:40px;"
+						on:click={async () => {
+							gatewayupdate = 'Converting to mini';
+							let res = await GatewayCommunicator.convertGatewayMode({
+								mode: 1
+							});
+							if (res?.success) {
+								alert('Gateway is converted to mini');
+								configuration = 'mini';
+							}
+							mini = false;
+						}}>Convert</Button
+					>
 				</div>
-			</PopUp>
-			<!-- main gateway popup -->
-			<PopUp bind:isOpen={main} style="min-height:16vh;padding:14px;">
-				<div class="p-2">
-					<div style="font-weight:600;margin-bottom:1%;font-size:large;">Convert to main</div>
-					<span style="font-weight:400;"> Mini gateway will be converted to main gateway </span>
-					<div class="right mt-4">
-						<Button
-							outlined
-							style="width:auto;height:40px;margin-right:10px;"
-							size="md"
-							on:click={() => {
-								main = false;
-							}}>Cancel</Button
-						>
-						<Button
-							size="md"
-							style="width:auto;height:40px;"
-							on:click={async () => {
-								gatewayupdate = 'Converting to main';
-								let res = await GatewayCommunicator.convertGatewayMode({
-									mode: 0
-								});
-								if (res?.success) {
-									alert('Gateway is converted to main');
-									configuration = 'main';
-								}
-								main = false;
-							}}>Convert</Button
-						>
-					</div>
+			</div>
+		</PopUp>
+		<!-- main gateway popup -->
+		<PopUp bind:isOpen={main} style="min-height:16vh;padding:14px;">
+			<div class="p-2">
+				<div style="font-weight:600;margin-bottom:1%;font-size:large;">Convert to main</div>
+				<span style="font-weight:400;"> Mini gateway will be converted to main gateway </span>
+				<div class="right mt-4">
+					<Button
+						outlined
+						style="width:auto;height:40px;margin-right:10px;"
+						size="md"
+						on:click={() => {
+							main = false;
+						}}>Cancel</Button
+					>
+					<Button
+						size="md"
+						style="width:auto;height:40px;"
+						on:click={async () => {
+							gatewayupdate = 'Converting to main';
+							let res = await GatewayCommunicator.convertGatewayMode({
+								mode: 0
+							});
+							if (res?.success) {
+								alert('Gateway is converted to main');
+								configuration = 'main';
+							}
+							main = false;
+						}}>Convert</Button
+					>
 				</div>
-			</PopUp>
-			<!-- Update popup -->
-			<PopUp bind:isOpen={updatebtn} style="min-height:18vh;padding:16px;">
-				<div class="p-2">
-					<div style="font-weight:600;margin-bottom:16px;font-size:large;">Version update</div>
-					<!-- {#if latest_branch}
+			</div>
+		</PopUp>
+		<!-- Update popup -->
+		<PopUp bind:isOpen={updatebtn} style="min-height:18vh;padding:16px;">
+			<div class="p-2">
+				<div style="font-weight:600;margin-bottom:16px;font-size:large;">Version update</div>
+				<!-- {#if latest_branch}
             <p>
               New version <strong>({latest_branch})</strong> is available for
               this gateway. <br />
@@ -181,14 +174,14 @@
           {:else}
             <p>Version is upto date</p>
           {/if} -->
-					<div style="display:flex;align-items:center;justify-content:space-between;">
-						<Button
-							outlined
-							size="md"
-							style="width:auto;height:40px;margin-right:10px;"
-							on:click={() => (updatebtn = false)}>Cancel</Button
-						>
-						<!-- {#if latest_branch}
+				<div style="display:flex;align-items:center;justify-content:space-between;">
+					<Button
+						outlined
+						size="md"
+						style="width:auto;height:40px;margin-right:10px;"
+						on:click={() => (updatebtn = false)}>Cancel</Button
+					>
+					<!-- {#if latest_branch}
               <Button
                 size="md"
                 style="width:auto;height:40px;"
@@ -199,33 +192,33 @@
                 }}>Update</Button
               >
             {/if} -->
-					</div>
 				</div>
-			</PopUp>
-			<!-- GatewayCard ui -->
-			<h3 class="header">
-				<span class:d-none={!heading.includes('KEUS main')} style="position: absolute; left:3%"
-					><img src="/images/master.svg" alt="" /></span
-				>
-				<p
-					style="position: relative;left:{!heading.includes('KEUS main')
-						? -10
-						: 16}px;font-size: 18px;width:max-content;display: inline-block;"
-				>
-					{heading}
-				</p>
-				<span style="position:relative;margin-left:{heading.includes('KEUS main') ? 36 : 16}px">
-					{#if onlineStatus == 'online'}
-						<span class="badge-green" style="width:16px;height:16px;" />
-					{:else if onlineStatus == 'offline'}
-						<span class="badge-red" style="width:16px;height:16px;" />
-					{:else}
-						<span class="badge-grey" style="width:16px;height:16px;" />
-					{/if}
-				</span>
+			</div>
+		</PopUp>
+		<!-- GatewayCard ui -->
+		<h3 class="header">
+			<span class:d-none={!heading.includes('KEUS main')} style="position: absolute; left:3%"
+				><img src="/images/master.svg" alt="" /></span
+			>
+			<p
+				style="position: relative;left:{!heading.includes('KEUS main')
+					? -10
+					: 16}px;font-size: 18px;width:max-content;display: inline-block;"
+			>
+				{heading}
+			</p>
+			<span style="position:relative;margin-left:{heading.includes('KEUS main') ? 36 : 16}px">
+				{#if onlineStatus == 'online'}
+					<span class="badge-green" style="width:16px;height:16px;" />
+				{:else if onlineStatus == 'offline'}
+					<span class="badge-red" style="width:16px;height:16px;" />
+				{:else}
+					<span class="badge-grey" style="width:16px;height:16px;" />
+				{/if}
+			</span>
 
-				<!-- remove gateway -->
-				<!-- <span
+			<!-- remove gateway -->
+			<!-- <span
 					class="float-end mx-1"
 					on:click={() => {
 						dispatch('remove', index);
@@ -233,29 +226,29 @@
 				>
 					<img src="/images/close.svg" alt="close" style="width:27px;height:27px;" />
 				</span> -->
-				<!-- <span class="power icon-power float-end mx-2" /> -->
-			</h3>
-			<div class="body">
-				<div class="" style="border-bottom: {currVersion ? '1px solid rgba(0,0,0,0.09)' : ''};">
-					<div class="" style="font-size: 15px;font-style: normal;font-weight: 500;">
-						IP : {ip}
-						{#if miniGatewayId}
-							<span class="d-block">Gateway Id : {miniGatewayId}</span>
-						{/if}
-						{#if channel}
-							<span class="d-block">Channel : {channel ? channel : 'NA'}</span>
-						{/if}
-					</div>
-					{#if currVersion}
-						<div class="mb-2">
-							<span style="font-size: 15px;font-style: normal;font-weight: 500;"
-								>Version : {currVersion} &nbsp;</span
-							>
-							<!-- {#if currVersion != latest_branch}
+			<!-- <span class="power icon-power float-end mx-2" /> -->
+		</h3>
+		<div class="body">
+			<div class="" style="border-bottom: {currVersion ? '1px solid rgba(0,0,0,0.09)' : ''};">
+				<div class="" style="font-size: 15px;font-style: normal;font-weight: 500;">
+					IP : {ip}
+					{#if miniGatewayId}
+						<span class="d-block">Gateway Id : {miniGatewayId}</span>
+					{/if}
+					{#if channel}
+						<span class="d-block">Channel : {channel ? channel : 'NA'}</span>
+					{/if}
+				</div>
+				{#if currVersion}
+					<div class="mb-2">
+						<span style="font-size: 15px;font-style: normal;font-weight: 500;"
+							>Version : {currVersion} &nbsp;</span
+						>
+						<!-- {#if currVersion != latest_branch}
                 <span style="font-weight: 600;">New version available!</span>
               {/if} -->
-						</div>
-						<!-- {#if currVersion != latest_branch}
+					</div>
+					<!-- {#if currVersion != latest_branch}
               <Button
                 outlined
                 style="margin-bottom:16px;"
@@ -264,34 +257,34 @@
                 }}>Update</Button
               >
             {/if} -->
-					{/if}
-				</div>
+				{/if}
 			</div>
-			<!-- convert to main or mini gateway -->
-			{#if configuration}
-				<div class="footer">
-					{#if configuration == 'main'}
-						<Button
-							size="md"
-							style="padding:12px"
-							class="mb-2"
-							block
-							on:click={() => {
-								mini = !mini;
-							}}>Convert to Mini</Button
-						>
-					{:else}
-						<Button
-							size="md"
-							block
-							style="padding:12px"
-							class="mb-2"
-							on:click={() => {
-								main = !main;
-							}}>Convert to Main</Button
-						>
-					{/if}
-					<!-- <Button
+		</div>
+		<!-- convert to main or mini gateway -->
+		{#if configuration}
+			<div class="footer">
+				{#if configuration == 'main'}
+					<Button
+						size="md"
+						style="padding:12px"
+						class="mb-2"
+						block
+						on:click={() => {
+							mini = !mini;
+						}}>Convert to Mini</Button
+					>
+				{:else}
+					<Button
+						size="md"
+						block
+						style="padding:12px"
+						class="mb-2"
+						on:click={() => {
+							main = !main;
+						}}>Convert to Main</Button
+					>
+				{/if}
+				<!-- <Button
             size="md"
             block
             style="padding:12px"
@@ -299,12 +292,12 @@
               gatewayupdate = "Configuration";
             }}>Configure</Button
           > -->
-				</div>
-			{:else}
-				<!-- redirect to settings page -->
-				{#if gatewayid}
-					<div class="footer">
-						<!-- <Button
+			</div>
+		{:else}
+			<!-- redirect to settings page -->
+			{#if gatewayid}
+				<div class="footer">
+					<!-- <Button
             size="md"
             style="margin-bottom:16px;"
             block
@@ -313,37 +306,36 @@
               goto("/gatewayDetails");
               }}>Edit details</Button
           > -->
-						<Button
-							size="md"
-							block
-							on:click={async () => {
-								if (heading.includes('KEUS main')) {
-									$selectedGateway = {
-										type: 'main',
-										gatewayId: gatewayid,
-										channel: channel,
-										ip: ip
-									}
-								} else {
-									$selectedGateway = {
-										type: 'mini',
-										gatewayId: miniGatewayId,
-										channel: channel,
-										ip: ip
-									}
-								}
-								$ch = channel;
-								await goto('devices');
-							}}>Demo login</Button
-						>
-					</div>
-				{/if}
+					<Button
+						size="md"
+						block
+						on:click={async () => {
+							if (heading.includes('KEUS main')) {
+								$selectedGateway = {
+									type: 'main',
+									gatewayId: gatewayid,
+									channel: channel,
+									ip: ip
+								};
+							} else {
+								$selectedGateway = {
+									type: 'mini',
+									gatewayId: miniGatewayId,
+									channel: channel,
+									ip: ip
+								};
+							}
+							$ch = channel;
+							await goto('devices');
+						}}>Demo login</Button
+					>
+				</div>
 			{/if}
-			{#if !currVersion}
-				<div style="color: red;padding:16px 8px;">Unable to get the gateway mode!</div>
-			{/if}
-		</div>
-	{/if}
+		{/if}
+		{#if !currVersion}
+			<div style="color: red;padding:16px 8px;">Unable to get the gateway mode!</div>
+		{/if}
+	</div>
 </div>
 
 <style>

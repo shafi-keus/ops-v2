@@ -89,9 +89,6 @@ const processPluginSection = <T extends CorePluginOutput | GeneralPluginOutput>(
     type: T['type']
 ): CategorySection<T> => {
 
-    console.log("devicePlugins are : ---------------> ",mainPlugins)
-    // const firstPlugin = mainPlugins[0];
-
     const processedPlugins = mainPlugins.map(plugin => ({
         name: plugin.name,
         version: plugin.version,

@@ -21,7 +21,7 @@ export default async function (ip: string, data: IPluginInstall): Promise<Respon
     const addrs = `http://${ip}:3000/keus/v1/site_manager/InstallPlugin`
     // const addrs = `/keus/v1/site_manager/InstallPlugin`;
 
-    console.log("Install plugin req data : ", data)
+    
 
 
     try {
@@ -30,7 +30,7 @@ export default async function (ip: string, data: IPluginInstall): Promise<Respon
             data,
             { timeout: 10000000 }
         );
-        console.log(response)
+        
         installingPluigns.update(plugins =>
             plugins.filter(plugin => plugin.id !== data.id)
         );

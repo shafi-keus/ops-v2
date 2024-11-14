@@ -145,7 +145,6 @@ export default class Client {
           if (beatResp.hasBeat) {
             _this.missedHeartbeats = 0;
           } else {
-            console.log('This is missed heartbeat count: ', _this.missedHeartbeats, beatResp);
             _this.missedHeartbeats++;
             if (_this.missedHeartbeats > _this.maxMissedHeartbeats) {
               try {
@@ -169,7 +168,6 @@ export default class Client {
   }
 
   clearHeartBeatTimer() {
-    console.log('Clear HeartbeatTimer Called');
     const _this = this;
     this.missedHeartbeats = 0;
     if (this.heartBeatTimer) {
@@ -178,20 +176,17 @@ export default class Client {
       this.heartBeatTimer = null;
     }
     if (this.heartBeatResponseTimer) {
-      console.log('Clearing HeartbeatResponseTimer');
       clearTimeout(this.heartBeatResponseTimer);
       this.heartBeatResponseTimer = null;
     }
   }
 
   cleanConnection() {
-    console.log('Cleaning Connection');
     try {
       if (this.serverChannel) {
         this.serverChannel.destroy();
       }
     } catch (e) {
-      console.log('Failed to destroy server channel');
     }
 
     this.clearHeartBeatTimer();
@@ -205,7 +200,6 @@ export default class Client {
 
   handleValidationResponse(validationResp: ValidationResponse) {
     const _this = this;
-    console.log('Got Validation Response: ', validationResp.getSuccess(), validationResp.getErrorReason());
     try {
       var resp: any;
       if (!_this.establishConnectionTimer) {
@@ -229,7 +223,6 @@ export default class Client {
         return resp;
       }
     } catch (e) {
-      console.log('Validation Response Error: ', e);
       return {
         success: false,
         code: 500,
@@ -631,7 +624,6 @@ export default class Client {
             unregisterDSReq,
             (err: Error | null, resp: DefaultServiceResponse): void => {
               if (err) {
-                console.log('Failed to remove default service');
                 reject(err);
               } else {
                 if (resp.getSuccess()) {
@@ -668,24 +660,20 @@ export default class Client {
           _this.communicationStub.registerService(serviceReq, (err: Error | null, resp: ServiceAck): void => {
             if (err) {
               _this.serviceMap.removeService(serviceName);
-              console.log('Failed to Add Service', serviceName);
               throw err;
             } else {
               if (resp.getSuccess()) {
                 _this.serviceMap.addService(serviceName, callback);
-                console.log('Service Added Successfully', serviceName);
                 resolve();
               } else {
                 switch (resp.getCode()) {
                   case errors.ServiceRegistrationErrorTypes.ServiceAlreadyRegisteredOnCloud.code:
                     _this.serviceMap.addService(serviceName, callback);
-                    console.log('Service Added Successfully', serviceName);
                     resolve();
                     break;
                   case errors.ServiceRegistrationErrorTypes.ServiceRegisteredByAnotherClient.code:
                   default:
                     _this.serviceMap.removeService(serviceName);
-                    console.log('Failed to Add Service', serviceName);
                     throw new errors.ServiceRegistrationError(resp.getError(), resp.getCode());
                 }
               }
@@ -708,18 +696,15 @@ export default class Client {
       req.setServiceName(serviceName);
       this.communicationStub.unregisterService(req, (err: Error | null, resp: ServiceAck): void => {
         if (err) {
-          console.log('Failed to Remove Service', serviceName);
           throw err;
         } else {
           if (resp.getSuccess()) {
             this.serviceMap.removeService(serviceName);
-            console.log('Service Removed Successfully', serviceName);
           } else {
             switch (resp.getCode()) {
               case errors.ServiceUnregistrationErrorTypes.ServiceNotRegisteredOnCloud.code:
               case errors.ServiceUnregistrationErrorTypes.ServiceRegisteredByAnotherClient.code:
                 this.serviceMap.removeService(serviceName);
-                console.log('Service Removed Successfully', serviceName);
                 break;
               default:
                 throw new errors.ServiceUnregistrationError(resp.getError(), resp.getCode());
@@ -794,23 +779,19 @@ export default class Client {
           _this.communicationStub.subscribe(eventReq, (err: Error | null, resp: SubscribeAck): void => {
             if (err) {
               _this.eventMap.removeEvent(eventName);
-              console.log('Failed to Add Event', eventName);
             } else {
               if (resp.getSuccess()) {
                 _this.eventMap.addEvent(eventName, cb);
-                console.log('Event Added Successfully', eventName);
                 resolve();
               } else {
                 switch (resp.getCode()) {
                   case errors.EventRegistrationErrorTypes.EventAlreadyRegisteredOnCloud.code:
                     _this.eventMap.addEvent(eventName, cb);
-                    console.log('Event Added Successfully', eventName);
                     resolve();
                     break;
                   case errors.EventRegistrationErrorTypes.EventRegisteredByAnotherClient.code:
                   default:
                     _this.eventMap.removeEvent(eventName);
-                    console.log('Failed to Add Event', eventName);
                     throw new errors.EventRegistrationError(resp.getError(), resp.getCode());
                 }
               }
@@ -833,18 +814,15 @@ export default class Client {
       req.setEventName(eventName);
       this.communicationStub.unSubscribe(req, (err: Error | null, resp: SubscribeAck): void => {
         if (err) {
-          console.log('Failed to Remove Event', eventName);
           throw err;
         } else {
           if (resp.getSuccess()) {
             this.eventMap.removeEvent(eventName);
-            console.log('Event Removed Successfully', eventName);
           } else {
             switch (resp.getCode()) {
               case errors.EventUnregistrationErrorTypes.EventNotRegisteredOnCloud.code:
               case errors.EventUnregistrationErrorTypes.EventRegisteredByAnotherClient.code:
                 this.eventMap.removeEvent(eventName);
-                console.log('Event Removed Successfully', eventName);
                 break;
               default:
                 throw new errors.EventUnregistrationError(resp.getError(), resp.getCode());
@@ -863,7 +841,6 @@ export default class Client {
         if (event) {
           event.callback(eventMessage.getEventData());
         } else {
-          console.log('Event not registered locally');
         }
       }
     } catch (e) {
@@ -872,7 +849,6 @@ export default class Client {
   }
 
   async publish(eventName: string, eventData: Any) {
-    console.log('Publishing Event', eventName);
     const _this = this;
     return new Promise(function (resolve, reject) {
       if (_this.connectionStatus !== ConnectionStatus.Authenticated) {

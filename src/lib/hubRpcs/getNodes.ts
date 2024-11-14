@@ -5,7 +5,9 @@ interface CallerResponse {
     data?: {
         success: boolean;
         actionResponseData?: {
-            nodesInfo?: unknown;
+            nodesInfo?: {
+                nodes?: []
+            };
         };
     };
     error?: unknown;
@@ -13,8 +15,8 @@ interface CallerResponse {
 
 export const getNodes = async (gatewayId: string) => {
     try {
-        
-        
+
+
         // Validate gateway ID
         if (!gatewayId) {
             throw new Error('Gateway ID is required');
@@ -62,7 +64,7 @@ export const getNodes = async (gatewayId: string) => {
 
     } catch (error) {
         console.log('GetNodes error:', error);
-        // throw new Error(`Failed to get nodes: error`);
+        throw error;
     }
 };
 

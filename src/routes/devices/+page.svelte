@@ -101,7 +101,7 @@
 					JSON.stringify($extendedScanData[device.address])
 				);
 			} catch (error) {
-				console.error('failed to process the manf data', error);
+				console.warn('failed to process the manf data', error);
 			}
 		}
 	}
@@ -153,7 +153,7 @@
 			unsubscribe();
 			(await listner).remove();
 		} catch (error) {
-			console.error('error : ', error);
+			console.warn('error',error);
 		}
 	});
 
@@ -232,12 +232,17 @@
 	}
 	$: if (!$otaFlag && !$scanningFlag && Object.keys($connectedDevicesStore)?.length == 0) {
 		(async () => {
+			try {
 			await BLE.startScan();
 			Toast.show({
 				text: 'Scanning nearby devices',
 				duration: 'short',
 				position: 'top'
-			});
+			});	
+			} catch (error) {
+				console.warn("Error : ",error)
+			}
+			
 		})();
 	}
 	$: if (filters.length > 0 || searchText.length > 0) deviceSearch = true;

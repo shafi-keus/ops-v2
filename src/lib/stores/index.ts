@@ -55,7 +55,7 @@ export const channel: Writable<number> = writable(26);
 export const leadId: Writable<string> = writable("");
 export const deviceState = writable({});
 
-export const gateways = writable([]);
+export const gateways:Writable<unknown[]> = writable([]);
 
 
 

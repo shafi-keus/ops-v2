@@ -19,7 +19,6 @@ export class TypeConversionUtils {
   }
 
   static getInstance(): TypeConversionUtils {
-    console.log('Getting instance');
     if (!TypeConversionUtils.instance) {
       TypeConversionUtils.instance = new TypeConversionUtils();
     }

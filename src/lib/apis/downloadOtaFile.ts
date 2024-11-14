@@ -12,7 +12,6 @@ interface Schema {
 export default async function (data) : Promise<any> {
     try {
         let downloadRes = await axios.post(`${APIServerBaseAddr}/getOtaBinFile`, data);
-        console.log("file",JSON.stringify(downloadRes));
         return downloadRes;
     } catch (e) {
         return e.response;

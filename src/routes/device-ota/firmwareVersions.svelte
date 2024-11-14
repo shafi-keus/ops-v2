@@ -34,13 +34,13 @@
 				reqData.branch = 'dev';
 			}
 			let resp = await getOtaVersionsList(reqData);
-			console.log('ota list : ' + JSON.stringify(resp?.data));
+			// console.log('ota list : ' + JSON.stringify(resp?.data));
 			if (resp?.data?.success) {
 				let arr = resp?.data?.data;
 				//no versions are available...
 				if (arr.length == 0) flag = 1;
 				for (let i = 0; i < arr.length; i++) {
-					console.log('obj is : ', arr[i]);
+					// console.log('obj is : ', arr[i]);
 					versions = [...versions, arr[i]];
 					availableVersions = versions.sort();
 					versions = availableVersions.reverse();
@@ -60,9 +60,9 @@
 
 	function blockUpdate() {
 		availableVersions.reverse();
-		console.log('available versions : ', availableVersions);
+		// console.log('available versions : ', availableVersions);
 		let currentVersion = device.name?.split(' ')[1].replace(/^v/i, '') || '';
-		console.log('current version : ', currentVersion);
+		// console.log('current version : ', currentVersion);
 		let blocked_versions = versions
 			.filter((version) => version.includes('blocked'))
 			.map((version) => {
@@ -70,13 +70,13 @@
 				return str;
 			});
 		blocked_versions.sort();
-		console.log('blocked versions : ', blocked_versions);
+		// console.log('blocked versions : ', blocked_versions);
 		for (let i = 0; i < blocked_versions.length; i++) {
 			if (currentVersion >= blocked_versions[i]) {
 				let ele = blocked_versions[i] + '-blocked';
 				let index = availableVersions.indexOf(ele);
 				availableVersions = availableVersions.slice(index);
-				console.log('availableVersions', availableVersions);
+				// console.log('availableVersions', availableVersions);
 			}
 			if (currentVersion < blocked_versions[i]) {
 				let ele = blocked_versions[i] + '-blocked';
@@ -88,8 +88,8 @@
 			}
 		}
 		versions.reverse();
-		console.log('versions : ', versions);
-		console.log('available versions : ', availableVersions);
+		// console.log('versions : ', versions);
+		// console.log('available versions : ', availableVersions);
 	}
 	onMount(async () => {
 		await init();

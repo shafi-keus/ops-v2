@@ -94,7 +94,7 @@
 			await fetchMediaHubs();
 			await init();
 		} catch (error) {
-			console.error('Uninstallation failed:', error);
+			console.log('Uninstallation failed:', error);
 		} finally {
 			uninstallingPlugins.update((plugins) => plugins.filter((id) => id !== selectedPlugin.id));
 			showModal = false;
@@ -119,7 +119,7 @@
 		try {
 			const fullPlugin = await getFullPluginDetails(selectedPlugin.id);
 			if (!fullPlugin) {
-				console.error('Plugin not found in cloud store');
+				console.log('Plugin not found in cloud store');
 				return;
 			}
 
@@ -136,7 +136,7 @@
 			await fetchMediaHubs();
 			init();
 		} catch (error) {
-			console.error('Error during plugin installation:', error);
+			console.log('Error during plugin installation:', error);
 			$installingPluigns = $installingPluigns.filter((p) => p.id !== selectedPlugin.id);
 		}
 	};
@@ -184,7 +184,7 @@
 			const [firstHub] = nodesData.nodes;
 			processMediaData(firstHub.plugins);
 		} catch (error) {
-			console.error('Failed to fetch media hubs:', error);
+			console.log('Failed to fetch media hubs:', error);
 		}
 	}
 

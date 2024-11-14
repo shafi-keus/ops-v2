@@ -26,7 +26,7 @@
     const mouseMoveHandler=(e:MouseEvent)=>{
         if(ismobile) return;
         if(moveThumbLeft && trackInfo){
-            // console.log(trackInfo?.left+leftThumb , e?.x,trackInfo?.right);
+            
             if(e.x<trackInfo?.left+(trackInfo?.width*(rightThumb/100)) && e?.x>trackInfo?.left && e?.x<trackInfo?.right) {
                 leftThumb=((e.x- trackInfo?.left)/(trackInfo?.right - trackInfo?.left))*100;
             }else if(e.x<trackInfo?.left+(trackInfo?.width*(rightThumb/100)) && e.x<=trackInfo?.left){
@@ -51,7 +51,7 @@
     const touchMoveHandler=(e:TouchEvent)=>{
         if(!ismobile) return;
         if(moveThumbLeft && trackInfo){
-            // console.log(trackInfo?.left+leftThumb , e?.x,trackInfo?.right);
+            
             if(e.changedTouches[0].clientX<trackInfo?.left+(trackInfo?.width*(rightThumb/100)) && e?.changedTouches[0].clientX>trackInfo?.left && e?.changedTouches[0].clientX<trackInfo?.right) {
                 leftThumb=((e.changedTouches[0].clientX- trackInfo?.left)/(trackInfo?.right - trackInfo?.left))*100;
             }else if(e.changedTouches[0].clientX<trackInfo?.left+(trackInfo?.width*(rightThumb/100)) && e.changedTouches[0].clientX<=trackInfo?.left){
@@ -75,12 +75,12 @@
 
     $:{
         value=Math.ceil(((max-min)*(leftThumb/100))+min);
-        // console.log(value)
+       
     }
     
     $:{
         Rvalue=Math.ceil(((max-min)*(rightThumb/100))+min);
-        // console.log(value)
+       
     }
 
     onMount(()=>{

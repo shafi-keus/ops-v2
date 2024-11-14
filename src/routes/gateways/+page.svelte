@@ -15,6 +15,7 @@
 	import Inputfield from '$lib/components/inputfield.svelte';
 	import GatewayCards from '$lib/components/gatewayCard.svelte';
 	import MediaCard from '$lib/components/MediaCard.svelte';
+	import GatewayUpdate from '$lib/components/gatewayUpdate.svelte';
 
 	// API calls
 	import getGatewayInfo from '$lib/apis/getGatewayInfo';
@@ -22,13 +23,12 @@
 	import { getNodes } from '$lib/hubRpcs/getNodes';
 	import registerNode from '$lib/apis/registerNode';
 
-	// Lifecycle
 	import { onDestroy, onMount } from 'svelte';
 
 	// Constants
-	const DELAY_TIME = 10000;
+	const DELAY_TIME = 1000;
+	const MAX_RETRIES = 10;
 
-	// Interfaces
 	interface GatewayInfo {
 		ip: string;
 		hubVersion: string;
@@ -45,7 +45,6 @@
 		channel: string;
 	}
 
-	// State
 	let searching = false;
 	let openmodal = false;
 	let ipmanual = false;
@@ -56,8 +55,8 @@
 	let miniInfo: Record<string, any> = {};
 	let mediaHubs: any[] = [];
 	let gatewayList: any[] = [];
+	let nodeRegitering: boolean = false;
 
-	// Helpers
 	const delay = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
 	async function getMiniGateways(gatewayData: any[], mainGateway: string): Promise<MiniGateway[]> {
@@ -69,18 +68,6 @@
 			version: ele[1]?.version,
 			channel: miniInfo[ele[0]]?.zigbeeChannel || 'NA'
 		}));
-	}
-
-	// API Functions
-	async function fetchMediaHubs() {
-		try {
-			const nodesData = await getNodes($gatewayId);
-			
-			mediaHubs = [...nodesData?.nodes];
-			processMediaData(mediaHubs[0].plugins);
-		} catch (error) {
-			console.log('Failed to fetch media hubs:', error);
-		}
 	}
 
 	async function fetchDetailedInfo() {
@@ -121,11 +108,49 @@
 		}
 	}
 
-	// Actions
 	async function searchGateways() {
 		$gateways = [];
 		gatewayList = [];
 		await init();
+	}
+
+	async function retryFetchMediaHubs(): Promise<boolean> {
+		try {
+			const nodesData = await getNodes($gatewayId);
+			if (nodesData && nodesData?.nodes && nodesData.nodes.length > 0) {
+				mediaHubs = [...nodesData.nodes];
+				processMediaData(mediaHubs[0].plugins);
+				if (hasPluginCore(mediaHubs[0])) return true;
+				return false;
+			}
+			return false;
+		} catch (error) {
+			console.log('Failed to fetch media hubs:', error);
+			return false;
+		}
+	}
+
+	function hasPluginCore(nodeData: any): boolean {
+		return nodeData.services.some((service: any) => service.serviceId === 'plugin_core');
+	}
+
+	async function fetchWithRetry(retries = 0): Promise<void> {
+		if (retries >= MAX_RETRIES) {
+			console.log('Max retries reached. Media hub might still be initializing.');
+			// searching = false;
+			nodeRegitering = false;
+			return;
+		}
+		const success = await retryFetchMediaHubs();
+		if (success) {
+			console.log(`Successfully fetched media hubs on attempt ${retries + 1}`);
+			// searching = false;
+			nodeRegitering = false;
+			return;
+		}
+		console.log(`Retry attempt ${retries + 1} failed, waiting ${DELAY_TIME / 1000} seconds...`);
+		await delay(DELAY_TIME);
+		return fetchWithRetry(retries + 1);
 	}
 
 	async function registerNewNode() {
@@ -133,23 +158,21 @@
 		const shouldProceed = confirm(`Do you want to register media hub with IP ${manualIp}?`);
 		if (!shouldProceed) return;
 		try {
-			searching = true;
+			nodeRegitering = true;
 			let resp = await registerNode(manualIp, $gatewayDetailInfo);
-			console.log('resp-------->', resp);
-			await delay(DELAY_TIME);
-			await fetchMediaHubs();
+			if (resp.success) {
+				await fetchWithRetry();
+			}
 		} catch (error) {
 			console.error('Failed to register node:', error);
-		} finally {
-			searching = false;
+			nodeRegitering = false;
 		}
 	}
 
-	// Initialization
 	async function init() {
 		try {
 			searching = true;
-			await fetchMediaHubs();
+			await retryFetchMediaHubs();
 
 			if ($gateways.length === 0) {
 				await fetchDetailedInfo();
@@ -164,7 +187,6 @@
 		}
 	}
 
-	// Lifecycle
 	onMount(init);
 	onDestroy(() => {
 		$gateways = [...gatewayList];
@@ -186,8 +208,10 @@
 </script>
 
 <div class="theme-page">
+	<GatewayUpdate isOpen={nodeRegitering} />
+
 	<header class="header bottom-shadow">
-		<h1 class="title-large">Gateways</h1>
+		<h1 class="title-large mb-0">Gateways</h1>
 	</header>
 
 	<section class="context">
@@ -262,7 +286,7 @@
 		</div>
 	</Modal>
 
-	<Modal bind:isOpen={openmodal}>
+	<Modal bind:isOpen={openmodal} title="Advance Options" style="height:15vh;">
 		<div class="advanced-options">
 			<div
 				class="option"
@@ -271,8 +295,8 @@
 					ipmanual = true;
 				}}
 			>
-				<span class="icon-edit fsipx-25" />
-				<span>Enter IP manually</span>
+				<span class="icon-Gateway fsipx-25" />
+				<span>Add Gateway</span>
 			</div>
 		</div>
 	</Modal>
@@ -285,31 +309,23 @@
 		flex-direction: column;
 	}
 
-	.header {
-		padding: 16px;
-		flex-shrink: 0;
-	}
-
 	.context {
 		padding: 16px;
 		padding-bottom: 0;
 		border-bottom: 1.5px solid rgba(0, 0, 0, 0.09);
 		flex-shrink: 0;
 	}
-
 	.controls {
 		padding: 16px 8px;
 		border-bottom: 1px solid rgba(0, 0, 0, 0.09);
 		flex-shrink: 0;
 	}
-
 	.content {
 		flex: 1;
 		overflow-y: auto;
 		padding: 16px;
 		background-color: #ececec;
 	}
-
 	.footer {
 		padding: 16px;
 
@@ -350,9 +366,9 @@
 		gap: 10px;
 		margin-top: 16px;
 	}
-
-	.advanced-options {
-		padding: 16px;
+	.header {
+		width: 100%;
+		padding: 16px 8px;
 	}
 
 	.option {
@@ -360,7 +376,7 @@
 		align-items: center;
 		gap: 8px;
 		cursor: pointer;
-		padding: 8px;
+		padding: 16px 8px;
 	}
 
 	.proceed {

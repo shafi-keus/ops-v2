@@ -8,6 +8,7 @@ interface ImageConfig {
 // Individual plugin interface
 interface Plugin {
     _id: string;
+    pluginId : string;
     description: string;
     displayName: string;
     imageConfig: ImageConfig;
@@ -34,7 +35,7 @@ const addrs = 'http://10.1.4.160:5678/api/v1/Plugins/getAllPlugins'
 export default async function (): Promise<Plugin[]> {
     try {
         const pluginsData: PluginsResponse = await axios.get(`${addrs}`, { timeout: 10000 });
-        console.log("caller data : ",pluginsData?.data?.data)
+        console.log("Get all plugins data ",pluginsData?.data?.data)
         if (pluginsData?.data?.success)
             return pluginsData?.data?.data;
         else return []

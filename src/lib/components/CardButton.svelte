@@ -15,7 +15,6 @@
     export let style = "";
 
     let classes=`shadow-${outlined? "normal":"inward"} btn-${color} ${size.length!=0? "-"+size:""}`;
-    console.log(classes);
 </script>
 
 <div class="d-inline-block" use:longpress={{duration:1000}} on:longpress>

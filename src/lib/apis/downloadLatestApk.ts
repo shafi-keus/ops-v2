@@ -9,8 +9,7 @@ interface Schema {
 
 export default async function (data: Schema) : Promise<any> {
     try {
-        let response = await axios.post(`${APIServerBaseAddr}/getApkFileDownload`, data, {timeout: 10000});  //100.81.175.52
-        console.log(response);
+        const response = await axios.post(`${APIServerBaseAddr}/getApkFileDownload`, data, {timeout: 10000});  //100.81.175.52
         return response;
     } catch (e) {
         return e.response

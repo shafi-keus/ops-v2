@@ -59,13 +59,8 @@ export default async function registerNode(
         };
 
     } catch (error) {
-        console.error(error)
+        console.log(error)
 
-        return {
-            success: false,
-            error: {
-                message: error.message
-            }
-        }
+        throw error
     }
 }

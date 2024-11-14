@@ -24,22 +24,3 @@ export default async function(data:type):Promise<any>{
         }
     }
 };
-
-// import {APIServerBaseAddr} from "../constants/global";
-// import axios from 'axios';
-
-// interface IgetAllGatewaysRequest {
-//     token: string;
-//     search?: string
-// }
-
-// export default async function (data) : Promise<any> {
-//     try {
-//         console.log(`get detailed info`,JSON.stringify(`${APIServerBaseAddr}/gatewayFetchAll`));
-//         let dynamoData = await axios.post(`${APIServerBaseAddr}/gatewayFetchAll`, data, {timeout: 10000});
-//         console.log("RESP))))),",JSON.stringify(dynamoData))
-//         return dynamoData;
-//     } catch (e) {
-//         return e.response
-//     }
-// }

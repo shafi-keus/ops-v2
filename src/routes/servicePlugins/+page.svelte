@@ -78,8 +78,6 @@
 		type
 	}: FindPluginParams): Promise<PluginListItem | null> => {
 		return new Promise((resolve) => {
-			// console.log('plugin id and type : ', pluginId, type);
-			// console.log('cloud store data : ', $CloudPluginStore);
 
 			CloudPluginStore.subscribe((store) => {
 				let found = null;
@@ -125,8 +123,6 @@
 			}
 		});
 
-		// console.log("plugins : ",plugins)
-
 
 		return plugins.filter((p) => !installedIds.has(p.id) && !installingIds.has(p.id));
 	};
@@ -134,7 +130,6 @@
 	const handlePluginInstall = async (event: CustomEvent) => {
 		try {
 			const selectedPlugin = event.detail;
-			console.log(selectedPlugin);
 			const pluginType = category;
 
 			const plugin = await findPluginInStore({
@@ -151,8 +146,6 @@
 				version: plugin.version || DEFAULT_VERSION
 			};
 
-			console.log("installing data : ",installData)
-
 			$installingPluigns = [...$installingPluigns, { ...plugin, coreType: pluginType }];
 			const response = await installPluginThroughNats($gatewayId, installData);
 
@@ -162,7 +155,7 @@
 			}
 			state.availablePlugins = getAvailablePlugins();
 		} catch (error) {
-			console.error('Installation failed:', error);
+			console.log('Installation failed:', error);
 			$installingPluigns = $installingPluigns.filter((p) => p.id !== event.detail.id);
 		}
 	};
@@ -185,7 +178,6 @@
 			};
 
 			let resp = await unInstallPluginThroughNats($gatewayId, uninstallData);
-			console.log('plugin uninstall resp : ', resp);
 			if (resp?.success) {
 				await Toast.show({
 					text: `${selectedPlugin.name} uninstalled successfully`,
@@ -197,7 +189,7 @@
 			await fetchMediaHubs();
 			await initializePlugins();
 		} catch (error) {
-			console.error('Uninstallation failed:', error);
+			console.log('Uninstallation failed:', error);
 		} finally {
 			uninstallingPlugins.update((plugins) => plugins.filter((id) => id !== selectedPlugin.id));
 			state.showModal = false;
@@ -216,7 +208,7 @@
 			const { nodes } = <any>await getNodes($gatewayId);
 			processMediaData(nodes[0].plugins);
 		} catch (error) {
-			console.error('Failed to fetch media hubs:', error);
+			console.log('Failed to fetch media hubs:', error);
 		}
 	};
 
@@ -250,7 +242,7 @@
 	</Modal>
 
 	<header class="header bottom-shadow">
-		<p class="title-large">
+		<p class="title-large" style="padding-left: 8px;">
 			{category === 'core' ? 'Device Plugins' : 'General Plugins'}
 		</p>
 	</header>

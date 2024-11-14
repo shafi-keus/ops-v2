@@ -44,13 +44,8 @@
 		data = { token: token };
 
 		let getGatewaysApiResp = await getAllGatewaysApi(data);
-		// console.log(`getGatewaysApiResp : `, JSON.stringify(getGatewaysApiResp));
 
 		if (getGatewaysApiResp?.success) {
-			// console.log(
-			//   "executed get gatewayfunction --->",
-			//   JSON.stringify(getGatewaysApiResp?.data?.res)
-			// );
 			$gatewayData = getGatewaysApiResp?.data?.res;
 		}
 	}

@@ -57,7 +57,6 @@
 		try {
 			connectingFlag = true;
 			$deviceConnected = true;
-			console.log('triggered connect call from ui' + device?.address);
 			if ($connectedDevicesStore[device?.address]?.connection || device.isConnected) {
 				// Read channel
 				await BLE.readCharacteristic({
@@ -473,8 +472,6 @@
 				block
 				on:click={async () => {
 					if (!device?.isConnected) await connectDevice(device);
-
-					console.log('redirecting to ota page');
 					await goto(`device-ota?device=${JSON.stringify(device)}`);
 				}}
 				><span style="font-size: 14px;">Firmware, Channel, Reset</span>
