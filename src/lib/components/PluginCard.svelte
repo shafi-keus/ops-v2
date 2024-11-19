@@ -11,7 +11,6 @@
 	export let uninstalling = false;
 
 	const showModal = async () => {
-		console.log('pressed');
 		dispatch('longPressed');
 	};
 </script>
@@ -20,7 +19,7 @@
 	on:click
 	style={installing || uninstalling ? 'opacity: .5;' : ''}
 	on:longpress={showModal}
-	longpressDuration={1000}
+	longpressDuration={700}
 >
 	<p class="label-large">{name}</p>
 	{#if desc && !uninstalling}

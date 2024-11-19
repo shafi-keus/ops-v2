@@ -153,9 +153,13 @@
 				await fetchMediaHubs();
 				await initializePlugins();
 			}
+			else{
+				alert('Failed to install plugin');
+			}
 			state.availablePlugins = getAvailablePlugins();
 		} catch (error) {
 			console.log('Installation failed:', error);
+			alert('Failed to install plugin');
 			$installingPluigns = $installingPluigns.filter((p) => p.id !== event.detail.id);
 		}
 	};
@@ -189,6 +193,7 @@
 			await fetchMediaHubs();
 			await initializePlugins();
 		} catch (error) {
+			alert('Failed to uninstall the plugin');
 			console.log('Uninstallation failed:', error);
 		} finally {
 			uninstallingPlugins.update((plugins) => plugins.filter((id) => id !== selectedPlugin.id));
@@ -250,7 +255,7 @@
 	<main class="content-container">
 		<div class="content">
 			{#if state.pluginServices.length > 0}
-				{#each state.pluginServices as service (service.id) }
+				{#each state.pluginServices as service (service.id)}
 					<PluginCard
 						name={service.name}
 						desc={service.description}

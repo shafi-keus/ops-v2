@@ -29,7 +29,8 @@ interface PluginsResponse {
 
 }
 
-const addrs = 'http://10.1.4.160:5678/api/v1/Plugins/getAllPlugins'
+const addrs = 'https://testapp.keus.in/api/v1/PluginsStore/getAllPlugins'
+// const addrs = 'http://10.1.4.160:3040/api/v1/PluginsStore/getAllPlugins'
 // const addrs = 'http://localhost:3000/keus/v1/Plugins/getAllPlugins'
 
 export default async function (): Promise<Plugin[]> {

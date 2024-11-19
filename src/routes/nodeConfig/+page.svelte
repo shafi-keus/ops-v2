@@ -95,6 +95,7 @@
 			await init();
 		} catch (error) {
 			console.log('Uninstallation failed:', error);
+			alert('Failed to uninstall the plugin');
 		} finally {
 			uninstallingPlugins.update((plugins) => plugins.filter((id) => id !== selectedPlugin.id));
 			showModal = false;
@@ -131,13 +132,20 @@
 			};
 
 			$installingPluigns = [...$installingPluigns, fullPlugin];
+			availablePluginCategories = getAvailablePlugins(pluginCategories, $CloudPluginStore);
+
 			const response = await installPluginThroughNats($gatewayId, installData);
 
-			await fetchMediaHubs();
-			init();
+			if (response?.success) {
+				await fetchMediaHubs();
+				init();
+			} else {
+				alert('Failed to install the plugin');
+			}
 		} catch (error) {
 			console.log('Error during plugin installation:', error);
 			$installingPluigns = $installingPluigns.filter((p) => p.id !== selectedPlugin.id);
+			alert('Failed to install the plugin');
 		}
 	};
 
@@ -154,22 +162,20 @@
 		installedPlugins: PluginCategory[],
 		cloudPlugins: typeof $CloudPluginStore
 	): CloudPlugin[] {
-		const installedCoreNames = new Set(
+		const installedCoreIds = new Set(
 			installedPlugins
 				.find((category) => category.type === 'core')
-				?.plugins.map((plugin) => plugin.name) || []
+				?.plugins.map((plugin) => plugin.id) || []
 		);
 
-		const installingPluginNames = new Set(
+		const installingPluginIds = new Set(
 			$installingPluigns
 				.filter((plugin) => plugin.type === 'CORE_PLUGIN')
-				.map((plugin) => plugin.name)
+				.map((plugin) => plugin.id)
 		);
 
 		return cloudPlugins.core.plugins
-			.filter(
-				(plugin) => !installedCoreNames.has(plugin.name) && !installingPluginNames.has(plugin.name)
-			)
+			.filter((plugin) => !installedCoreIds.has(plugin.id) && !installingPluginIds.has(plugin.id))
 			.map(({ id, name, description, type }) => ({
 				id,
 				name,

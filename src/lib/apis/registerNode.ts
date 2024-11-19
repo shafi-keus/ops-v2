@@ -13,7 +13,7 @@ interface INodeRegistrationRequest {
 
 interface INodeRegistrationResponse {
     success: boolean;
-    nodeId: string;
+    nodeId?: string;
     error?: string;
 }
 

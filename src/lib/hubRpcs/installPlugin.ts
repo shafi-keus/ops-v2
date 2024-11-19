@@ -59,7 +59,7 @@ export const installPluginThroughNats = async (gatewayId: string, data: ActionDa
             }
         }
 
-        return response.data;
+        return response.data.actionResponseData;
 
     } catch (error) {
         installingPluigns.update(plugins =>

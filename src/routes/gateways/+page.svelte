@@ -27,7 +27,7 @@
 
 	// Constants
 	const DELAY_TIME = 1000;
-	const MAX_RETRIES = 10;
+	const MAX_RETRIES = 30;
 
 	interface GatewayInfo {
 		ip: string;
@@ -137,14 +137,12 @@
 	async function fetchWithRetry(retries = 0): Promise<void> {
 		if (retries >= MAX_RETRIES) {
 			console.log('Max retries reached. Media hub might still be initializing.');
-			// searching = false;
 			nodeRegitering = false;
 			return;
 		}
 		const success = await retryFetchMediaHubs();
 		if (success) {
 			console.log(`Successfully fetched media hubs on attempt ${retries + 1}`);
-			// searching = false;
 			nodeRegitering = false;
 			return;
 		}
@@ -162,10 +160,13 @@
 			let resp = await registerNode(manualIp, $gatewayDetailInfo);
 			if (resp.success) {
 				await fetchWithRetry();
+			} else {
+				alert('Failed to register new node');
 			}
 		} catch (error) {
 			console.error('Failed to register node:', error);
 			nodeRegitering = false;
+			
 		}
 	}
 
@@ -286,8 +287,8 @@
 		</div>
 	</Modal>
 
-	<Modal bind:isOpen={openmodal} title="Advance Options" style="height:15vh;">
-		<div class="advanced-options">
+	<Modal bind:isOpen={openmodal} title="Advance Options" style="max-height: 35vh;">
+		<div class="advanced-options item">
 			<div
 				class="option"
 				on:click={() => {
@@ -298,6 +299,12 @@
 				<span class="icon-Gateway fsipx-25" />
 				<span>Add Gateway</span>
 			</div>
+		</div>
+		<div class="p-2">
+			<Button outlined on:click={() => (openmodal = false)}>
+				<span class="icon-close-1 fsipx-24" />
+				Close
+			</Button>
 		</div>
 	</Modal>
 </div>
@@ -330,6 +337,9 @@
 		padding: 16px;
 
 		flex-shrink: 0;
+	}
+	.item {
+		border-bottom: 1px solid rgb(196, 198, 207);
 	}
 
 	.button-group {
